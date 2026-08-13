@@ -4,21 +4,18 @@ RUN apt-get update && apt-get install -y \
     libpng-dev \
     libonig-dev \
     libxml2-dev \
-    sqlite3 \
-    libsqlite3-dev \
     zip \
     unzip \
     git \
     curl \
     libzip-dev
 
-RUN docker-php-ext-install pdo_sqlite pdo_mysql mbstring zip
+RUN docker-php-ext-install pdo_mysql mbstring zip
 
 WORKDIR /app
 COPY . /app
 
-RUN touch /app/database/database.sqlite
-RUN chmod -R 777 /app/storage /app/bootstrap/cache /app/database
+RUN chmod -R 777 /app/storage /app/bootstrap/cache
 
 EXPOSE 8000
 CMD sh -c "php artisan migrate --force --seed && php artisan serve --host=0.0.0.0 --port=8000"
