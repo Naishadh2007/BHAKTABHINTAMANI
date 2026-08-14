@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback } from 'react';
 import axios from 'axios';
+const AuthContext = createContext(null);
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
 const API = `${API_BASE}/api/admin`;
