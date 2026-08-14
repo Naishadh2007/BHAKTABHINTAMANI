@@ -1,9 +1,8 @@
 import { createContext, useContext, useState, useCallback } from 'react';
 import axios from 'axios';
 
-const AuthContext = createContext(null);
-
-const API = 'http://localhost:8000/api/admin';
+const API_BASE = import.meta.env.VITE_API_URL || '';
+const API = `${API_BASE}/api/admin`;
 
 export function AuthProvider({ children }) {
   const [admin, setAdmin] = useState(() => {
@@ -50,7 +49,7 @@ export function AuthProvider({ children }) {
   // Axios helper with auth header
   const authAxios = useCallback(() => {
     return axios.create({
-      baseURL: 'http://localhost:8000/api/admin',
+      baseURL: `${API_BASE}/api/admin`,
       headers: { Authorization: `Bearer ${token}` },
     });
   }, [token]);

