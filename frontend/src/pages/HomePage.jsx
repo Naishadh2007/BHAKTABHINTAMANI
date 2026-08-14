@@ -5,7 +5,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { IconAlert, IconArrowRight } from '../components/Icons';
 import './HomePage.css';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 function SkeletonCard() {
   return (

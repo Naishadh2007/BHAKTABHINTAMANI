@@ -6,7 +6,7 @@ import { useReading } from '../context/ReadingContext';
 import { IconArrowLeft, IconAlert, IconChevronLeft, IconChevronRight } from '../components/Icons';
 import './ChapterPage.css';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 function LoadingSkeleton() {
   return (
