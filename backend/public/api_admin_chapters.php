@@ -11,186 +11,178 @@ $dbuser = 'if0_42640441';
 $pass   = 'Naishadhbv2007';
 $db     = 'if0_42640441_bhaktchintamani';
 
-try {
-    $pdo = new PDO("mysql:host=$host;dbname=$db;charset=utf8mb4", $dbuser, $pass, [
+function getPdo($host, $dbuser, $pass, $db) {
+    return new PDO("mysql:host=$host;dbname=$db;charset=utf8mb4", $dbuser, $pass, [
         PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
     ]);
+}
 
-    // Check if `status` column exists in chapters
-    $colCheck = $pdo->query("SHOW COLUMNS FROM chapters LIKE 'status'");
-    $hasStatus = ($colCheck->rowCount() > 0);
+function respond($data, $code = 200) {
+    http_response_code($code);
+    echo json_encode($data, JSON_UNESCAPED_UNICODE);
+    exit;
+}
 
-    // Add status column safely only if not present
-    if (!$hasStatus) {
-        try {
-            $pdo->exec("ALTER TABLE chapters ADD COLUMN `status` VARCHAR(20) NOT NULL DEFAULT 'published'");
-            $hasStatus = true;
-        } catch (PDOException $ignored) {
-            // Column may already exist or DDL not permitted — proceed without status
-            $hasStatus = false;
-        }
-    }
-
+try {
+    $pdo    = getPdo($host, $dbuser, $pass, $db);
     $method = $_SERVER['REQUEST_METHOD'];
     $id     = isset($_GET['id'])   ? (int)$_GET['id']   : null;
-    $bulk   = isset($_GET['bulk']) ? true                : false;
+    $bulk   = isset($_GET['bulk']);
     $input  = json_decode(file_get_contents('php://input'), true) ?: [];
 
-    // ── GET all (admin list) ──────────────────────────────────────────────────
+    // ── GET all ──────────────────────────────────────────────────────────────
     if ($method === 'GET' && !$id) {
         $page   = max(1, (int)($_GET['page']  ?? 1));
         $limit  = max(1, (int)($_GET['limit'] ?? 30));
         $offset = ($page - 1) * $limit;
 
-        // Safe sort column whitelist (only use status if column exists)
-        $allowedSort = ['order', 'title_gu', 'id'];
-        if ($hasStatus) $allowedSort[] = 'status';
-        $sort = in_array($_GET['sort'] ?? '', $allowedSort) ? $_GET['sort'] : 'order';
-        $dir  = ($_GET['dir'] ?? 'asc') === 'desc' ? 'DESC' : 'ASC';
+        // Try query with status first; fallback without if column missing
+        $search = !empty($_GET['search']) ? '%' . trim($_GET['search']) . '%' : null;
+        $status = !empty($_GET['status']) ? trim($_GET['status']) : null;
 
-        $search = isset($_GET['search']) && trim($_GET['search']) !== '' ? '%' . trim($_GET['search']) . '%' : null;
-        $status = isset($_GET['status']) && trim($_GET['status']) !== '' ? trim($_GET['status'])              : null;
-
+        // Build WHERE
         $where  = [];
         $params = [];
-
         if ($search) {
             $where[]  = '(title LIKE ? OR title_gu LIKE ? OR title_en LIKE ?)';
-            $params   = array_merge($params, [$search, $search, $search]);
-        }
-        if ($status && $hasStatus) {
-            $where[]  = '`status` = ?';
-            $params[] = $status;
+            $params   = [$search, $search, $search];
         }
 
         $whereSQL = $where ? 'WHERE ' . implode(' AND ', $where) : '';
 
-        // Count
-        $cntStmt = $pdo->prepare("SELECT COUNT(*) FROM chapters $whereSQL");
-        $cntStmt->execute($params);
-        $totalCount = (int)$cntStmt->fetchColumn();
+        // Count total
+        $cnt = $pdo->prepare("SELECT COUNT(*) FROM chapters $whereSQL");
+        $cnt->execute($params);
+        $total = (int)$cnt->fetchColumn();
 
-        // Select columns
-        $selectCols = 'id, `order`, title, title_gu, title_en, description_gu';
-        if ($hasStatus) $selectCols .= ', `status`';
-
-        $dataStmt = $pdo->prepare(
-            "SELECT $selectCols FROM chapters $whereSQL ORDER BY `$sort` $dir LIMIT ? OFFSET ?"
-        );
-        $dataStmt->execute(array_merge($params, [$limit, $offset]));
-        $rows = $dataStmt->fetchAll();
-
-        // Ensure status key exists in every row
-        foreach ($rows as &$row) {
-            if (!array_key_exists('status', $row)) $row['status'] = 'published';
+        // Try fetching with status column
+        $rows = null;
+        try {
+            $filterParams = $params;
+            $statusWhere  = $whereSQL;
+            if ($status) {
+                $statusWhere = $statusWhere ? "$statusWhere AND `status` = ?" : "WHERE `status` = ?";
+                $filterParams[] = $status;
+            }
+            $s = $pdo->prepare("SELECT id, `order`, title, title_gu, title_en, `status`, description_gu FROM chapters $statusWhere ORDER BY `order` ASC LIMIT ? OFFSET ?");
+            $s->execute(array_merge($filterParams, [$limit, $offset]));
+            $rows = $s->fetchAll();
+        } catch (PDOException $noStatus) {
+            // status column doesn't exist — fetch without it
+            $s = $pdo->prepare("SELECT id, `order`, title, title_gu, title_en, description_gu FROM chapters $whereSQL ORDER BY `order` ASC LIMIT ? OFFSET ?");
+            $s->execute(array_merge($params, [$limit, $offset]));
+            $rows = $s->fetchAll();
+            foreach ($rows as &$r) { $r['status'] = 'published'; }
+            unset($r);
         }
-        unset($row);
 
-        echo json_encode([
+        respond([
             'data'     => $rows,
-            'total'    => $totalCount,
+            'total'    => $total,
             'page'     => $page,
             'limit'    => $limit,
-            'has_more' => ($offset + $limit) < $totalCount,
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
+            'has_more' => ($offset + $limit) < $total,
+        ]);
     }
 
     // ── GET single ───────────────────────────────────────────────────────────
     if ($method === 'GET' && $id) {
-        $stmt = $pdo->prepare("SELECT * FROM chapters WHERE id = ?");
-        $stmt->execute([$id]);
-        $ch = $stmt->fetch();
-        if (!$ch) { http_response_code(404); echo json_encode(['message' => 'Not found']); exit; }
-        if (!array_key_exists('status', $ch)) $ch['status'] = 'published';
-        echo json_encode($ch, JSON_UNESCAPED_UNICODE);
-        exit;
+        $s = $pdo->prepare("SELECT * FROM chapters WHERE id = ?");
+        $s->execute([$id]);
+        $ch = $s->fetch();
+        if (!$ch) respond(['message' => 'Not found'], 404);
+        if (!isset($ch['status'])) $ch['status'] = 'published';
+        respond($ch);
     }
 
     // ── POST bulk ─────────────────────────────────────────────────────────────
     if ($method === 'POST' && $bulk) {
         $ids    = array_map('intval', (array)($input['ids'] ?? []));
         $action = trim($input['action'] ?? '');
-        if (!$ids) { echo json_encode(['message' => 'No IDs']); exit; }
+        if (!$ids) respond(['message' => 'No IDs']);
         $ph = implode(',', array_fill(0, count($ids), '?'));
         if ($action === 'delete') {
             $pdo->prepare("DELETE FROM chapters WHERE id IN ($ph)")->execute($ids);
-        } elseif ($action === 'publish' && $hasStatus) {
-            $pdo->prepare("UPDATE chapters SET `status`='published' WHERE id IN ($ph)")->execute($ids);
-        } elseif ($action === 'draft' && $hasStatus) {
-            $pdo->prepare("UPDATE chapters SET `status`='draft' WHERE id IN ($ph)")->execute($ids);
+        } elseif (in_array($action, ['publish','draft'])) {
+            $st = $action === 'publish' ? 'published' : 'draft';
+            try { $pdo->prepare("UPDATE chapters SET `status`='$st' WHERE id IN ($ph)")->execute($ids); }
+            catch (PDOException $e) { /* status column missing, ignore */ }
         }
-        echo json_encode(['message' => 'Done']);
-        exit;
+        respond(['message' => 'Done']);
     }
 
     // ── POST create ───────────────────────────────────────────────────────────
     if ($method === 'POST') {
-        $maxOrder = (int)$pdo->query("SELECT COALESCE(MAX(`order`), 0) FROM chapters")->fetchColumn() + 1;
-
-        // Build INSERT dynamically based on existing columns
-        $cols   = ['`order`', 'title', 'title_gu', 'title_en', 'description', 'description_gu', 'description_en', 'content', 'content_gu', 'content_en', 'created_at', 'updated_at'];
-        $vals   = [
-            $input['order']          ?? $maxOrder,
-            $input['title']          ?? ($input['title_gu'] ?? ''),
-            $input['title_gu']       ?? '',
-            $input['title_en']       ?? '',
-            $input['description']    ?? ($input['description_gu'] ?? ''),
-            $input['description_gu'] ?? '',
-            $input['description_en'] ?? '',
-            $input['content']        ?? ($input['content_gu'] ?? ''),
-            $input['content_gu']     ?? '',
-            $input['content_en']     ?? '',
-            date('Y-m-d H:i:s'),
-            date('Y-m-d H:i:s'),
-        ];
-        if ($hasStatus) { $cols[] = '`status`'; $vals[] = $input['status'] ?? 'published'; }
-
-        $ph   = implode(', ', array_fill(0, count($vals), '?'));
-        $stmt = $pdo->prepare("INSERT INTO chapters (" . implode(', ', $cols) . ") VALUES ($ph)");
-        $stmt->execute($vals);
-
-        $newId  = $pdo->lastInsertId();
-        $rowStmt = $pdo->prepare("SELECT * FROM chapters WHERE id = ?");
-        $rowStmt->execute([$newId]);
-        echo json_encode($rowStmt->fetch(), JSON_UNESCAPED_UNICODE);
-        exit;
+        $maxOrder = (int)$pdo->query("SELECT COALESCE(MAX(`order`),0) FROM chapters")->fetchColumn() + 1;
+        try {
+            $pdo->prepare("INSERT INTO chapters (`order`,title,title_gu,title_en,description,description_gu,description_en,content,content_gu,content_en,`status`,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW())")
+                ->execute([
+                    $input['order']          ?? $maxOrder,
+                    $input['title']          ?? ($input['title_gu'] ?? ''),
+                    $input['title_gu']       ?? '',
+                    $input['title_en']       ?? '',
+                    $input['description']    ?? ($input['description_gu'] ?? ''),
+                    $input['description_gu'] ?? '',
+                    $input['description_en'] ?? '',
+                    $input['content']        ?? ($input['content_gu'] ?? ''),
+                    $input['content_gu']     ?? '',
+                    $input['content_en']     ?? '',
+                    $input['status']         ?? 'published',
+                ]);
+        } catch (PDOException $noStatus) {
+            // Retry without status column
+            $pdo->prepare("INSERT INTO chapters (`order`,title,title_gu,title_en,description,description_gu,description_en,content,content_gu,content_en,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,NOW(),NOW())")
+                ->execute([
+                    $input['order']          ?? $maxOrder,
+                    $input['title']          ?? ($input['title_gu'] ?? ''),
+                    $input['title_gu']       ?? '',
+                    $input['title_en']       ?? '',
+                    $input['description']    ?? ($input['description_gu'] ?? ''),
+                    $input['description_gu'] ?? '',
+                    $input['description_en'] ?? '',
+                    $input['content']        ?? ($input['content_gu'] ?? ''),
+                    $input['content_gu']     ?? '',
+                    $input['content_en']     ?? '',
+                ]);
+        }
+        $newId = $pdo->lastInsertId();
+        $s = $pdo->prepare("SELECT * FROM chapters WHERE id=?"); $s->execute([$newId]);
+        respond($s->fetch());
     }
 
     // ── PUT update ────────────────────────────────────────────────────────────
     if ($method === 'PUT' && $id) {
-        $allowed = ['order', 'title', 'title_gu', 'title_en', 'description', 'description_gu', 'description_en', 'content', 'content_gu', 'content_en'];
-        if ($hasStatus) $allowed[] = 'status';
-
-        $fields = [];
-        $vals   = [];
+        $allowed = ['order','title','title_gu','title_en','description','description_gu','description_en','content','content_gu','content_en','status'];
+        $fields = []; $vals = [];
         foreach ($allowed as $f) {
-            if (array_key_exists($f, $input)) {
-                $fields[] = "`$f` = ?";
-                $vals[]   = $input[$f];
-            }
+            if (array_key_exists($f, $input)) { $fields[] = "`$f`=?"; $vals[] = $input[$f]; }
         }
-        if (!$fields) { echo json_encode(['message' => 'Nothing to update']); exit; }
+        if (!$fields) respond(['message' => 'Nothing to update']);
         $vals[] = $id;
-        $pdo->prepare("UPDATE chapters SET " . implode(', ', $fields) . ", updated_at = NOW() WHERE id = ?")->execute($vals);
-
-        $rowStmt = $pdo->prepare("SELECT * FROM chapters WHERE id = ?");
-        $rowStmt->execute([$id]);
-        echo json_encode($rowStmt->fetch(), JSON_UNESCAPED_UNICODE);
-        exit;
+        try {
+            $pdo->prepare("UPDATE chapters SET " . implode(',', $fields) . ",updated_at=NOW() WHERE id=?")->execute($vals);
+        } catch (PDOException $noStatus) {
+            // Remove status and retry
+            $fields2 = []; $vals2 = [];
+            foreach (array_diff($allowed, ['status']) as $f) {
+                if (array_key_exists($f, $input)) { $fields2[] = "`$f`=?"; $vals2[] = $input[$f]; }
+            }
+            if ($fields2) { $vals2[] = $id; $pdo->prepare("UPDATE chapters SET " . implode(',', $fields2) . ",updated_at=NOW() WHERE id=?")->execute($vals2); }
+        }
+        $s = $pdo->prepare("SELECT * FROM chapters WHERE id=?"); $s->execute([$id]);
+        respond($s->fetch());
     }
 
     // ── DELETE ────────────────────────────────────────────────────────────────
     if ($method === 'DELETE' && $id) {
-        $pdo->prepare("DELETE FROM chapters WHERE id = ?")->execute([$id]);
-        echo json_encode(['message' => 'Deleted']);
-        exit;
+        $pdo->prepare("DELETE FROM chapters WHERE id=?")->execute([$id]);
+        respond(['message' => 'Deleted']);
     }
 
-    echo json_encode(['message' => 'Unknown action']);
+    respond(['message' => 'Unknown action'], 400);
 
-} catch (PDOException $e) {
+} catch (Throwable $e) {
     http_response_code(500);
-    echo json_encode(['error' => true, 'message' => $e->getMessage()]);
+    echo json_encode(['error' => true, 'message' => $e->getMessage(), 'line' => $e->getLine()]);
 }
