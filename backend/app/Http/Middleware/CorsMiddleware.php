@@ -18,10 +18,11 @@ class CorsMiddleware
     {
         $origin = $request->headers->get('Origin', '');
 
-        // Allow any *.vercel.app, *.freedev.app, or *.github.io domain dynamically
+        // Allow any *.vercel.app, *.freedev.app, *.gt.tc, or *.github.io domain dynamically
         $isAllowed = in_array($origin, $this->allowedOrigins)
             || str_ends_with($origin, '.vercel.app')
             || str_ends_with($origin, '.freedev.app')
+            || str_ends_with($origin, '.gt.tc')
             || str_ends_with($origin, '.github.io')
             || empty($origin);
 
