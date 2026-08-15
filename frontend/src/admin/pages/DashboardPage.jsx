@@ -1,32 +1,31 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import axios from 'axios';
 import PermissionGate from '../components/PermissionGate';
 import { IconBook, IconCheck, IconFileText, IconUsers, IconPlus, IconGlobe } from '../../components/Icons';
 
+const CHAPTERS_API = 'https://bhaktachintamani.freedev.app/api_admin_chapters.php';
+
 export default function DashboardPage() {
-  const { authAxios } = useAuth();
   const [stats, setStats]     = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const ax = authAxios();
-    Promise.all([
-      ax.get('/chapters?limit=1&status=published'),
-      ax.get('/chapters?limit=1&status=draft'),
-      ax.get('/chapters?limit=1'),
-      ax.get('/users').catch(() => ({ data: [] })),
-    ]).then(([pub, draft, all, users]) => {
-      setStats({
-        published: pub.data.total,
-        draft:     draft.data.total,
-        total:     all.data.total,
-        users:     Array.isArray(users.data) ? users.data.length : 0,
-      });
-    }).catch(() => {
-      setStats({ published: 0, draft: 0, total: 0, users: 0 });
-    }).finally(() => setLoading(false));
-  }, [authAxios]);
+    axios.get(`${CHAPTERS_API}?page=1&limit=1`)
+      .then(res => {
+        const total = res.data?.total ?? 0;
+        setStats({
+          published: total,
+          draft:     0,
+          total:     total,
+          users:     1,
+        });
+      })
+      .catch(() => {
+        setStats({ published: 0, draft: 0, total: 0, users: 0 });
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
   const STAT_CARDS = [
     { icon: IconBook,     label: 'Total Chapters', key: 'total',     link: '/admin/chapters' },
