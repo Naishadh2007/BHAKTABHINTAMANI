@@ -6,7 +6,7 @@
   height: 3.5px;
   background: var(--accent);
   box-shadow: 0 0 12px var(--accent);
-  z-index: 200;
+  z-index: 1001;
   transition: width 100ms ease-out;
 }
 
