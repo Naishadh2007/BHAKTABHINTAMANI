@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import axios from 'axios';
 import PermissionToggle from '../components/PermissionToggle';
 import { IconPlus, IconEdit, IconTrash, IconCheck, IconAlert } from '../../components/Icons';
+
+const USERS_API = 'https://bhaktachintamani.freedev.app/api_admin_users.php';
 
 const ALL_PERMS = [
   { key: 'view_dashboard',   label: 'View Dashboard' },
@@ -15,7 +17,6 @@ const EMPTY_FORM = { name: '', email: '', password: '' };
 const EMPTY_PERMS = Object.fromEntries(ALL_PERMS.map(p => [p.key, false]));
 
 export default function UsersPage() {
-  const { authAxios } = useAuth();
   const [users, setUsers]         = useState([]);
   const [loading, setLoading]     = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -27,9 +28,9 @@ export default function UsersPage() {
 
   const load = () => {
     setLoading(true);
-    authAxios().get('/users')
+    axios.get(USERS_API)
       .then(r => {
-        const list = Array.isArray(r.data) ? r.data : Array.isArray(r.data?.data) ? r.data.data : [];
+        const list = Array.isArray(r.data) ? r.data : [];
         setUsers(list);
       })
       .catch(() => setUsers([]))
@@ -58,7 +59,6 @@ export default function UsersPage() {
     setError('');
     setSaving(true);
     try {
-      const ax = authAxios();
       const payload = {
         ...(form.name     && { name: form.name }),
         ...(form.email    && { email: form.email }),
@@ -66,20 +66,19 @@ export default function UsersPage() {
         permissions: perms,
       };
       if (editUser) {
-        await ax.put(`/users/${editUser.id}`, payload);
+        await axios.put(`${USERS_API}?id=${editUser.id}`, payload);
       } else {
         if (!form.name || !form.email || !form.password) {
           setError('Name, email, and password are required.');
           setSaving(false);
           return;
         }
-        await ax.post('/users', payload);
+        await axios.post(USERS_API, payload);
       }
       setShowModal(false);
       load();
     } catch (err) {
-      const msgs = err.response?.data?.errors;
-      setError(msgs ? Object.values(msgs).flat().join(' ') : err.response?.data?.message || 'Save failed.');
+      setError(err.response?.data?.message || 'Save failed.');
     } finally {
       setSaving(false);
     }
@@ -88,10 +87,10 @@ export default function UsersPage() {
   const handleDelete = async (id) => {
     if (!confirm('Delete this admin user?')) return;
     try {
-      await authAxios().delete(`/users/${id}`);
+      await axios.delete(`${USERS_API}?id=${id}`);
       load();
     } catch (err) {
-      alert(err.response?.data?.error || 'Delete failed.');
+      alert(err.response?.data?.message || 'Delete failed.');
     }
   };
 
