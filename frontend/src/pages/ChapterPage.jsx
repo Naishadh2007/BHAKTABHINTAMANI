@@ -8,6 +8,18 @@ import './ChapterPage.css';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
+const parseApiResponse = (data) => {
+  if (!data) return null;
+  if (typeof data === 'string') {
+    try {
+      return JSON.parse(data);
+    } catch (e) {
+      return null;
+    }
+  }
+  return data;
+};
+
 function LoadingSkeleton() {
   return (
     <div className="chapter__loading" role="status" aria-label="Loading chapter…">
