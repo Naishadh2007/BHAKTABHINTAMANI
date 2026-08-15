@@ -37,11 +37,26 @@ export default function HomePage() {
     try {
       setLoading(true);
       setError(null);
-      const { data } = await axios.get(`${API_BASE}/api/chapters`);
-      setChapters(data);
+      const res = await axios.get(`${API_BASE}/api/chapters`);
+      const data = res.data;
+      if (Array.isArray(data)) {
+        setChapters(data);
+      } else if (data && Array.isArray(data.chapters)) {
+        setChapters(data.chapters);
+      } else if (data && typeof data === 'object') {
+        // In case API returned keyed object
+        const values = Object.values(data).filter(item => item && typeof item === 'object' && item.id);
+        if (values.length > 0) {
+          setChapters(values);
+        } else {
+          setError(lang === 'gu' ? 'પ્રકરણો લોડ થઈ શક્યા નથી. બેકએન્ડ ચકાસો.' : 'Could not load chapters from API.');
+        }
+      } else {
+        setError(lang === 'gu' ? 'પ્રકરણો લોડ થઈ શક્યા નથી. બેકએન્ડ ચકાસો.' : 'Could not load chapters from API.');
+      }
     } catch (err) {
+      console.error('API Error:', err);
       setError(lang === 'gu' ? 'પ્રકરણો લોડ થઈ શક્યા નથી. કૃપા કરીને બેકએન્ડ ચાલુ છે કે નહીં તે ચકાસો.' : 'Could not load chapters. Please make sure the backend is running.');
-      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -52,6 +67,7 @@ export default function HomePage() {
   }, []);
 
   const getTitle = (chapter) => {
+    if (!chapter) return '';
     if (lang === 'gu') return chapter.title_gu || chapter.title || `પ્રકરણ ${toGujaratiDigits(chapter.order)}`;
     return chapter.title_en || chapter.title || `Chapter ${chapter.order}`;
   };
@@ -73,7 +89,7 @@ export default function HomePage() {
               ? 'પવિત્ર ગ્રંથ અને પવન કથાઓનો ભક્તિસભર સંગ્રહ'
               : 'A sacred repository of devotional chapters and spiritual wisdom.'}
           </p>
-          {!loading && !error && (
+          {!loading && !error && Array.isArray(chapters) && (
             <div className="home__meta">
               <span>
                 {lang === 'gu' ? `${toGujaratiDigits(chapters.length)} પ્રકરણો ઉપલબ્ધ` : `${chapters.length} Chapters Available`}
@@ -107,16 +123,18 @@ export default function HomePage() {
           </div>
         ) : (
           <div className="home__grid" role="list">
-            {chapters.length === 0 ? (
+            {!Array.isArray(chapters) || chapters.length === 0 ? (
               <p className="home__empty">
                 {lang === 'gu' ? 'કોઈ પ્રકરણો મળ્યા નથી.' : 'No chapters found.'}
               </p>
             ) : (
               chapters.map((chapter) => {
+                if (!chapter) return null;
                 const isBookmarked = bookmark && bookmark.chapterId === chapter.id;
+                const orderNum = chapter.order || 1;
                 const formattedNum = lang === 'gu'
-                  ? toGujaratiDigits(chapter.order < 10 ? `0${chapter.order}` : chapter.order)
-                  : (chapter.order < 10 ? `0${chapter.order}` : chapter.order);
+                  ? toGujaratiDigits(orderNum < 10 ? `0${orderNum}` : orderNum)
+                  : (orderNum < 10 ? `0${orderNum}` : orderNum);
 
                 return (
                   <Link
@@ -125,7 +143,7 @@ export default function HomePage() {
                     id={`chapter-card-${chapter.id}`}
                     className={`chapter-card ${isBookmarked ? 'chapter-card--bookmarked' : ''}`}
                     role="listitem"
-                    aria-label={`Chapter ${chapter.order}: ${getTitle(chapter)}`}
+                    aria-label={`Chapter ${orderNum}: ${getTitle(chapter)}`}
                   >
                     {/* Watermark Background Number in Gujarati Rasa / English */}
                     <span className="chapter-card__bg-num font-rasa" aria-hidden="true">
@@ -136,7 +154,7 @@ export default function HomePage() {
                     <div className="chapter-card__body">
                       <div className="chapter-card__top">
                         <span className="chapter-card__order-badge font-rasa">
-                          {lang === 'gu' ? `પ્રકરણ ${toGujaratiDigits(chapter.order)}` : `Chapter ${chapter.order}`}
+                          {lang === 'gu' ? `પ્રકરણ ${toGujaratiDigits(orderNum)}` : `Chapter ${orderNum}`}
                         </span>
 
                         {isBookmarked && (
