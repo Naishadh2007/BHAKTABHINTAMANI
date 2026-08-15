@@ -1,6 +1,13 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ChapterController;
+
+// Explicit API routes in web.php to guarantee resolution on any shared hosting environment
+Route::get('/api/chapters', [ChapterController::class, 'index']);
+Route::get('/api/chapters/{id}', [ChapterController::class, 'show']);
+Route::get('/public/api/chapters', [ChapterController::class, 'index']);
+Route::get('/public/api/chapters/{id}', [ChapterController::class, 'show']);
 
 // Serve React SPA index.html for all frontend web routes
 Route::get('/{any?}', function () {
@@ -12,6 +19,6 @@ Route::get('/{any?}', function () {
         'message' => 'ReadVerse Backend API Server is running',
         'status'  => 'active',
     ]);
-})->where('any', '^(?!(api|public/api)).*$');
+})->where('any', '^(?!(api|public/api|test_db)).*$');
 
 
