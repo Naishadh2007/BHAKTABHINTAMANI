@@ -18,7 +18,13 @@ export function AuthProvider({ children }) {
   );
 
   const login = useCallback(async (email, password) => {
-    const res = await axios.post(`${API}/login`, { email, password });
+    let res;
+    try {
+      res = await axios.post(`${API}/login`, { email, password });
+    } catch (err) {
+      // Fallback to standalone direct admin endpoint if Laravel route was rewritten/blocked
+      res = await axios.post(`${API_BASE}/api_admin.php?action=login`, { email, password });
+    }
     const { token: t, admin: a } = res.data;
     setToken(t);
     setAdmin(a);
@@ -32,6 +38,10 @@ export function AuthProvider({ children }) {
       if (token) {
         await axios.post(`${API}/logout`, {}, {
           headers: { Authorization: `Bearer ${token}` },
+        }).catch(() => {
+          return axios.post(`${API_BASE}/api_admin.php?action=logout`, {}, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
         });
       }
     } catch { /* ignore */ }
