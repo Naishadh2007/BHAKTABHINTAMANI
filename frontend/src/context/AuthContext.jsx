@@ -2,7 +2,8 @@ import { createContext, useContext, useState, useCallback } from 'react';
 import axios from 'axios';
 const AuthContext = createContext(null);
 
-const API_BASE = import.meta.env.VITE_API_URL || '';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://bhaktachintamani.freedev.app';
+const ADMIN_PHP = 'http://bhaktachintamani.freedev.app/api_admin.php';
 const API = `${API_BASE}/api/admin`;
 
 export function AuthProvider({ children }) {
@@ -20,10 +21,10 @@ export function AuthProvider({ children }) {
   const login = useCallback(async (email, password) => {
     let res;
     try {
-      res = await axios.post(`${API}/login`, { email, password });
+      res = await axios.post(`${ADMIN_PHP}?action=login`, { email, password });
     } catch (err) {
-      // Fallback to standalone direct admin endpoint if Laravel route was rewritten/blocked
-      res = await axios.post(`${API_BASE}/api_admin.php?action=login`, { email, password });
+      // secondary fallback to Laravel route
+      res = await axios.post(`${API}/login`, { email, password });
     }
     const { token: t, admin: a } = res.data;
     setToken(t);
