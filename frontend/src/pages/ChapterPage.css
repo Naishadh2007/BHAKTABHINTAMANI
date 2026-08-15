@@ -281,62 +281,6 @@
   letter-spacing: -0.01em;
 }
 
-/* ══════════════════════════════════════════════
-   GLOBAL SCREEN-WIDE TOP BAR (FAR LEFT ALIGNED)
-   ══════════════════════════════════════════════ */
-.chapter__top-bar {
-  max-width: 1280px;
-  margin: 0 auto 1.25rem;
-  padding: 0 var(--space-xl);
-  display: flex;
-  align-items: center;
-}
-
-/* Modern Glassmorphic Icon-only Back Button */
-.chapter__icon-back-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 13px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text-secondary);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  text-decoration: none;
-  transition: all 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
-}
-
-[data-theme="light"] .chapter__icon-back-btn {
-  border-color: rgba(90, 58, 41, 0.16);
-  background: rgba(90, 58, 41, 0.04);
-  color: #6a4a35;
-}
-
-.chapter__icon-back-btn:hover {
-  background: rgba(232, 197, 71, 0.12);
-  border-color: var(--accent);
-  color: var(--accent);
-  transform: translateX(-4px) scale(1.06);
-  box-shadow:
-    0 6px 20px rgba(0, 0, 0, 0.18),
-    0 0 12px rgba(232, 197, 71, 0.25);
-}
-
-[data-theme="light"] .chapter__icon-back-btn:hover {
-  background: rgba(200, 148, 13, 0.1);
-  border-color: rgba(200, 148, 13, 0.5);
-  color: #c8940d;
-  box-shadow: 0 6px 18px rgba(90, 58, 41, 0.14);
-}
-
-.chapter__icon-back-btn:active {
-  transform: scale(0.92);
-}
-
 /* Reading Article Outer Container */
 .chapter__article {
   max-width: 700px;
