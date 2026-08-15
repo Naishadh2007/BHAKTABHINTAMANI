@@ -2,8 +2,8 @@ import { createContext, useContext, useState, useCallback } from 'react';
 import axios from 'axios';
 const AuthContext = createContext(null);
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://bhaktachintamani.freedev.app';
-const ADMIN_PHP = 'http://bhaktachintamani.freedev.app/api_admin.php';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://bhaktachintamani.freedev.app';
+const ADMIN_PHP = 'https://bhaktachintamani.freedev.app/api_admin.php';
 const API = `${API_BASE}/api/admin`;
 
 export function AuthProvider({ children }) {
