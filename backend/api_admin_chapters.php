@@ -23,8 +23,13 @@ try {
 
     // Add status column safely only if not present
     if (!$hasStatus) {
-        $pdo->exec("ALTER TABLE chapters ADD COLUMN `status` VARCHAR(20) NOT NULL DEFAULT 'published'");
-        $hasStatus = true;
+        try {
+            $pdo->exec("ALTER TABLE chapters ADD COLUMN `status` VARCHAR(20) NOT NULL DEFAULT 'published'");
+            $hasStatus = true;
+        } catch (PDOException $ignored) {
+            // Column may already exist or DDL not permitted — proceed without status
+            $hasStatus = false;
+        }
     }
 
     $method = $_SERVER['REQUEST_METHOD'];

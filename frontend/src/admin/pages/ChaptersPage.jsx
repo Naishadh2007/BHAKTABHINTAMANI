@@ -36,6 +36,7 @@ export default function ChaptersPage() {
 
   const sentinelRef = useRef(null);
   const searchTimer = useRef(null);
+  const loadingRef  = useRef(false);
 
   // Debounce search
   useEffect(() => {
@@ -57,7 +58,8 @@ export default function ChaptersPage() {
 
   // Fetch chapters via direct PHP API
   const fetchChapters = useCallback(async (pageNum) => {
-    if (loading) return;
+    if (loadingRef.current) return;
+    loadingRef.current = true;
     setLoading(true);
     try {
       const params = new URLSearchParams({
@@ -80,10 +82,11 @@ export default function ChaptersPage() {
     } catch (e) {
       console.error(e);
     } finally {
+      loadingRef.current = false;
       setLoading(false);
       setInitialLoad(false);
     }
-  }, [loading, debouncedSearch, statusFilter, sortCol, sortDir]);
+  }, [debouncedSearch, statusFilter, sortCol, sortDir]);
 
   // Trigger fetch when page/filters change
   useEffect(() => {
