@@ -5,6 +5,14 @@ use Illuminate\Http\Request;
 
 define('LARAVEL_START', microtime(true));
 
+// Normalize REQUEST_URI if Apache rewrote with /public/ prefix on shared hosting
+if (isset($_SERVER['REQUEST_URI'])) {
+    $_SERVER['REQUEST_URI'] = preg_replace('#^/public/#i', '/', $_SERVER['REQUEST_URI']);
+}
+if (isset($_SERVER['UNENCODED_URL'])) {
+    $_SERVER['UNENCODED_URL'] = preg_replace('#^/public/#i', '/', $_SERVER['UNENCODED_URL']);
+}
+
 // Determine if the application is in maintenance mode...
 if (file_exists($maintenance = __DIR__.'/../storage/framework/maintenance.php')) {
     require $maintenance;

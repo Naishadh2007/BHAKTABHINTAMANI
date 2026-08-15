@@ -12,6 +12,6 @@ Route::get('/{any?}', function () {
         'message' => 'ReadVerse Backend API Server is running',
         'status'  => 'active',
     ]);
-})->where('any', '^(?!api).*$');
+})->where('any', '^(?!(api|public/api)).*$');
 
 
