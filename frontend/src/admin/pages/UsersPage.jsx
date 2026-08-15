@@ -28,7 +28,10 @@ export default function UsersPage() {
   const load = () => {
     setLoading(true);
     authAxios().get('/users')
-      .then(r => setUsers(r.data))
+      .then(r => {
+        const list = Array.isArray(r.data) ? r.data : Array.isArray(r.data?.data) ? r.data.data : [];
+        setUsers(list);
+      })
       .catch(() => setUsers([]))
       .finally(() => setLoading(false));
   };

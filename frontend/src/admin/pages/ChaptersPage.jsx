@@ -68,13 +68,16 @@ export default function ChaptersPage() {
         ...(statusFilter     && { status: statusFilter }),
       });
       const { data } = await ax.get(`/chapters?${params}`);
+      const rows = Array.isArray(data?.data) ? data.data
+                 : Array.isArray(data)        ? data
+                 : [];
       if (pageNum === 1) {
-        setChapters(data.data);
+        setChapters(rows);
       } else {
-        setChapters(prev => [...prev, ...data.data]);
+        setChapters(prev => [...prev, ...rows]);
       }
-      setTotal(data.total);
-      setHasMore(data.has_more);
+      setTotal(data?.total ?? rows.length);
+      setHasMore(data?.has_more ?? false);
     } catch (e) {
       console.error(e);
     } finally {
