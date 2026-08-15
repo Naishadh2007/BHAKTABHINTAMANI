@@ -49,27 +49,37 @@ export default function HomePage() {
     try {
       setLoading(true);
       setError(null);
-      const res = await axios.get(`${API_BASE}/api/chapters`, {
-        headers: { Accept: 'application/json' }
-      });
-      let data = parseApiResponse(res.data);
-      if (Array.isArray(data)) {
+      let res;
+      try {
+        res = await axios.get(`${API_BASE}/api/chapters`, {
+          headers: { Accept: 'application/json' }
+        });
+      } catch (e) {
+        res = await axios.get(`${API_BASE}/api_chapters.php`, {
+          headers: { Accept: 'application/json' }
+        });
+      }
+
+      let data = parseApiResponse(res?.data);
+      if (!Array.isArray(data)) {
+        try {
+          const fallbackRes = await axios.get(`${API_BASE}/api_chapters.php`, {
+            headers: { Accept: 'application/json' }
+          });
+          data = parseApiResponse(fallbackRes.data);
+        } catch (e) {}
+      }
+
+      if (Array.isArray(data) && data.length > 0) {
         setChapters(data);
-      } else if (data && Array.isArray(data.chapters)) {
+      } else if (data && Array.isArray(data.chapters) && data.chapters.length > 0) {
         setChapters(data.chapters);
-      } else if (data && typeof data === 'object') {
-        const values = Object.values(data).filter(item => item && typeof item === 'object' && item.id);
-        if (values.length > 0) {
-          setChapters(values);
-        } else {
-          setError(lang === 'gu' ? 'પ્રકરણો મળ્યા નથી.' : 'No chapters found.');
-        }
       } else {
-        setError(lang === 'gu' ? 'પ્રકરણો લોડ થઈ શક્યા નથી.' : 'Could not load chapters.');
+        setError(lang === 'gu' ? 'પ્રકરણો મળ્યા નથી.' : 'No chapters found.');
       }
     } catch (err) {
       console.error('API Error:', err);
-      setError(lang === 'gu' ? 'પ્રકરણો લોડ થઈ શક્યા નથી. કૃપા કરીને બેકએન્ડ ચાલુ છે કે નહીં તે ચકાસો.' : 'Could not load chapters. Please make sure the backend is running.');
+      setError(lang === 'gu' ? 'પ્રકરણો લોડ થઈ શક્યા નથી. કૃપા કરીને ફરી પ્રયાસ કરો.' : 'Could not load chapters. Please try again.');
     } finally {
       setLoading(false);
     }

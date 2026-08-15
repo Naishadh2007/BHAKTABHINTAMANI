@@ -46,32 +46,48 @@ export default function ChapterPage() {
 
   // Fetch all chapters for sidebar
   useEffect(() => {
-    axios.get(`${API_BASE}/api/chapters`, { headers: { Accept: 'application/json' } })
-      .then((res) => {
-        let data = res.data;
-        if (typeof data === 'string') {
-          try { data = JSON.parse(data); } catch (e) { data = null; }
+    const loadSidebar = async () => {
+      try {
+        let res = await axios.get(`${API_BASE}/api/chapters`, { headers: { Accept: 'application/json' } }).catch(() => null);
+        let data = res ? parseApiResponse(res.data) : null;
+        if (!Array.isArray(data)) {
+          const fb = await axios.get(`${API_BASE}/api_chapters.php`, { headers: { Accept: 'application/json' } }).catch(() => null);
+          data = fb ? parseApiResponse(fb.data) : null;
         }
         if (Array.isArray(data)) {
           setAllChapters(data);
           const activeIdx = data.findIndex(c => c.id === Number(id));
           if (activeIdx >= 0) setScrollFocusIndex(activeIdx);
         }
-      })
-      .catch(() => {});
+      } catch (e) {}
+    };
+    loadSidebar();
   }, [id]);
 
   const fetchChapter = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const res = await axios.get(`${API_BASE}/api/chapters/${id}`, {
-        headers: { Accept: 'application/json' }
-      });
-      let data = res.data;
-      if (typeof data === 'string') {
-        try { data = JSON.parse(data); } catch (e) { data = null; }
+      let res;
+      try {
+        res = await axios.get(`${API_BASE}/api/chapters/${id}`, {
+          headers: { Accept: 'application/json' }
+        });
+      } catch (e) {
+        res = await axios.get(`${API_BASE}/api_chapters.php?id=${id}`, {
+          headers: { Accept: 'application/json' }
+        }).catch(() => null);
       }
+      let data = res ? parseApiResponse(res.data) : null;
+      if (!data || (!data.chapter && !data.id)) {
+        try {
+          const fb = await axios.get(`${API_BASE}/api_chapters.php?id=${id}`, {
+            headers: { Accept: 'application/json' }
+          });
+          data = parseApiResponse(fb.data);
+        } catch (e) {}
+      }
+
       if (data && data.chapter) {
         setChapterData(data);
       } else if (data && data.id) {
