@@ -15,6 +15,18 @@ export const toGujaratiDigits = (num) => {
   return String(num).replace(/[0-9]/g, (digit) => GUJARATI_DIGITS[Number(digit)]);
 };
 
+export const parseApiResponse = (data) => {
+  if (!data) return null;
+  if (typeof data === 'string') {
+    try {
+      return JSON.parse(data);
+    } catch (e) {
+      return null;
+    }
+  }
+  return data;
+};
+
 function SkeletonCard() {
   return (
     <div className="chapter-card-skeleton" aria-hidden="true">
@@ -37,22 +49,23 @@ export default function HomePage() {
     try {
       setLoading(true);
       setError(null);
-      const res = await axios.get(`${API_BASE}/api/chapters`);
-      const data = res.data;
+      const res = await axios.get(`${API_BASE}/api/chapters`, {
+        headers: { Accept: 'application/json' }
+      });
+      let data = parseApiResponse(res.data);
       if (Array.isArray(data)) {
         setChapters(data);
       } else if (data && Array.isArray(data.chapters)) {
         setChapters(data.chapters);
       } else if (data && typeof data === 'object') {
-        // In case API returned keyed object
         const values = Object.values(data).filter(item => item && typeof item === 'object' && item.id);
         if (values.length > 0) {
           setChapters(values);
         } else {
-          setError(lang === 'gu' ? 'પ્રકરણો લોડ થઈ શક્યા નથી. બેકએન્ડ ચકાસો.' : 'Could not load chapters from API.');
+          setError(lang === 'gu' ? 'પ્રકરણો મળ્યા નથી.' : 'No chapters found.');
         }
       } else {
-        setError(lang === 'gu' ? 'પ્રકરણો લોડ થઈ શક્યા નથી. બેકએન્ડ ચકાસો.' : 'Could not load chapters from API.');
+        setError(lang === 'gu' ? 'પ્રકરણો લોડ થઈ શક્યા નથી.' : 'Could not load chapters.');
       }
     } catch (err) {
       console.error('API Error:', err);

@@ -46,11 +46,17 @@ export default function ChapterPage() {
 
   // Fetch all chapters for sidebar
   useEffect(() => {
-    axios.get(`${API_BASE}/api/chapters`)
-      .then(({ data }) => {
-        setAllChapters(data);
-        const activeIdx = data.findIndex(c => c.id === Number(id));
-        if (activeIdx >= 0) setScrollFocusIndex(activeIdx);
+    axios.get(`${API_BASE}/api/chapters`, { headers: { Accept: 'application/json' } })
+      .then((res) => {
+        let data = res.data;
+        if (typeof data === 'string') {
+          try { data = JSON.parse(data); } catch (e) { data = null; }
+        }
+        if (Array.isArray(data)) {
+          setAllChapters(data);
+          const activeIdx = data.findIndex(c => c.id === Number(id));
+          if (activeIdx >= 0) setScrollFocusIndex(activeIdx);
+        }
       })
       .catch(() => {});
   }, [id]);
@@ -59,11 +65,19 @@ export default function ChapterPage() {
     try {
       setLoading(true);
       setError(null);
-      const { data } = await axios.get(`${API_BASE}/api/chapters/${id}`);
-      if (data.chapter) {
+      const res = await axios.get(`${API_BASE}/api/chapters/${id}`, {
+        headers: { Accept: 'application/json' }
+      });
+      let data = res.data;
+      if (typeof data === 'string') {
+        try { data = JSON.parse(data); } catch (e) { data = null; }
+      }
+      if (data && data.chapter) {
         setChapterData(data);
-      } else {
+      } else if (data && data.id) {
         setChapterData({ chapter: data, prev_chapter: null, next_chapter: null });
+      } else {
+        setError(lang === 'gu' ? 'પ્રકરણ મળ્યું નથી.' : 'Chapter not found.');
       }
     } catch (err) {
       if (err.response?.status === 404) {
