@@ -11,8 +11,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy-frontend:
-    name: ?? Build & Deploy Frontend (bhaktachintamani.gt.tc)
+  deploy-all:
+    name: ?? Build & Deploy to InfinityFree
     runs-on: ubuntu-latest
 
     steps:
@@ -31,8 +31,9 @@ jobs:
           cd frontend
           npm ci
           npm run build
+          cp -r dist/* ../backend/public/
 
-      - name: ?? Sync Frontend to bhaktachintamani.gt.tc/htdocs/
+      - name: ?? Sync to bhaktachintamani.gt.tc (Frontend Domain)
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
@@ -41,16 +42,7 @@ jobs:
           local-dir: frontend/dist/
           server-dir: bhaktachintamani.gt.tc/htdocs/
 
-  deploy-backend:
-    name: ?? Deploy Backend API (bhaktachintamani.freedev.app)
-    runs-on: ubuntu-latest
-    needs: deploy-frontend
-
-    steps:
-      - name: ?? Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: ?? Sync Backend to htdocs/
+      - name: ?? Sync to bhaktachintamani.freedev.app (Main App & API)
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
