@@ -2,15 +2,25 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { useLanguage } from '../context/LanguageContext';
-import { IconAlert, IconArrowRight } from '../components/Icons';
+import { useReading } from '../context/ReadingContext';
+import { IconAlert, IconArrowRight, IconBookmarkFilled, IconBook } from '../components/Icons';
 import './HomePage.css';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
+const GUJARATI_DIGITS = ['૦', '૧', '૨', '૩', '૪', '૫', '૬', '૭', '૮', '૯'];
+
+export const toGujaratiDigits = (num) => {
+  if (num === null || num === undefined) return '';
+  return String(num).replace(/[0-9]/g, (digit) => GUJARATI_DIGITS[Number(digit)]);
+};
+
 function SkeletonCard() {
   return (
     <div className="chapter-card-skeleton" aria-hidden="true">
-      <div className="chapter-card-skeleton__order skeleton" />
+      <div className="chapter-card-skeleton__header">
+        <div className="chapter-card-skeleton__badge skeleton" />
+      </div>
       <div className="chapter-card-skeleton__title skeleton" />
     </div>
   );
@@ -21,6 +31,7 @@ export default function HomePage() {
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState(null);
   const { lang }                = useLanguage();
+  const { bookmark }            = useReading();
 
   const fetchChapters = async () => {
     try {
@@ -41,7 +52,7 @@ export default function HomePage() {
   }, []);
 
   const getTitle = (chapter) => {
-    if (lang === 'gu') return chapter.title_gu || chapter.title || `પ્રકરણ ${chapter.order}`;
+    if (lang === 'gu') return chapter.title_gu || chapter.title || `પ્રકરણ ${toGujaratiDigits(chapter.order)}`;
     return chapter.title_en || chapter.title || `Chapter ${chapter.order}`;
   };
 
@@ -50,6 +61,10 @@ export default function HomePage() {
       <div className="page-container">
         {/* Hero */}
         <section className="home__hero" aria-labelledby="home-heading">
+          <div className="home__hero-badge">
+            <IconBook size={16} color="var(--accent)" />
+            <span>{lang === 'gu' ? 'પવિત્ર ગ્રંથ સંગ્રહ' : 'Sacred Scripture'}</span>
+          </div>
           <h1 id="home-heading" className="home__hero-title">
             {lang === 'gu' ? 'ભક્ત-ચિંતામણિ' : 'Bhakta-Chintamani'}
           </h1>
@@ -60,12 +75,14 @@ export default function HomePage() {
           </p>
           {!loading && !error && (
             <div className="home__meta">
-              <span>{chapters.length} {lang === 'gu' ? 'પ્રકરણો' : 'Chapters'}</span>
+              <span>
+                {lang === 'gu' ? `${toGujaratiDigits(chapters.length)} પ્રકરણો ઉપલબ્ધ` : `${chapters.length} Chapters Available`}
+              </span>
             </div>
           )}
         </section>
 
-        {/* Content Grid */}
+        {/* Modern Content Grid */}
         {loading ? (
           <div
             className="home__grid"
@@ -95,28 +112,69 @@ export default function HomePage() {
                 {lang === 'gu' ? 'કોઈ પ્રકરણો મળ્યા નથી.' : 'No chapters found.'}
               </p>
             ) : (
-              chapters.map((chapter) => (
-                <Link
-                  key={chapter.id}
-                  to={`/chapter/${chapter.id}`}
-                  id={`chapter-card-${chapter.id}`}
-                  className="chapter-card"
-                  role="listitem"
-                  aria-label={`Chapter ${chapter.order}: ${getTitle(chapter)}`}
-                >
-                  <span className="chapter-card__order">
-                    {lang === 'gu' ? `પ્રકરણ ${chapter.order}` : `Chapter ${chapter.order}`}
-                  </span>
-                  <h2 className="chapter-card__title">{getTitle(chapter)}</h2>
-                  <span className="chapter-card__arrow" aria-hidden="true">
-                    <IconArrowRight size={16} color="var(--accent)" />
-                  </span>
-                </Link>
-              ))
+              chapters.map((chapter) => {
+                const isBookmarked = bookmark && bookmark.chapterId === chapter.id;
+                const formattedNum = lang === 'gu'
+                  ? toGujaratiDigits(chapter.order < 10 ? `0${chapter.order}` : chapter.order)
+                  : (chapter.order < 10 ? `0${chapter.order}` : chapter.order);
+
+                return (
+                  <Link
+                    key={chapter.id}
+                    to={`/chapter/${chapter.id}`}
+                    id={`chapter-card-${chapter.id}`}
+                    className={`chapter-card ${isBookmarked ? 'chapter-card--bookmarked' : ''}`}
+                    role="listitem"
+                    aria-label={`Chapter ${chapter.order}: ${getTitle(chapter)}`}
+                  >
+                    {/* Watermark Background Number in Gujarati Rasa / English */}
+                    <span className="chapter-card__bg-num font-rasa" aria-hidden="true">
+                      {formattedNum}
+                    </span>
+
+                    {/* Card Content */}
+                    <div className="chapter-card__body">
+                      <div className="chapter-card__top">
+                        <span className="chapter-card__order-badge font-rasa">
+                          {lang === 'gu' ? `પ્રકરણ ${toGujaratiDigits(chapter.order)}` : `Chapter ${chapter.order}`}
+                        </span>
+
+                        {isBookmarked && (
+                          <span className="chapter-card__bookmark-pill" title="Bookmarked">
+                            <IconBookmarkFilled size={13} color="var(--accent)" />
+                          </span>
+                        )}
+                      </div>
+
+                      <h2 className="chapter-card__title font-rasa">{getTitle(chapter)}</h2>
+                    </div>
+
+                    {/* Subtle Elegant Left Accent Bar */}
+                    <div className="chapter-card__accent-bar" aria-hidden="true" />
+                  </Link>
+                );
+              })
             )}
           </div>
         )}
       </div>
+
+      {/* ── Floating Bookmark FAB ── */}
+      {bookmark && (
+        <Link
+          to={`/chapter/${bookmark.chapterId}`}
+          className="home__bookmark-fab font-rasa"
+          aria-label={lang === 'gu' ? `બુકમાર્ક: પ્રકરણ ${toGujaratiDigits(bookmark.order)}` : `Bookmark: Chapter ${bookmark.order}`}
+          title={bookmark.title}
+        >
+          <IconBookmarkFilled size={20} color="var(--bg-main)" />
+          <span className="home__bookmark-fab-label">
+            {lang === 'gu' ? `પ્રકરણ ${toGujaratiDigits(bookmark.order)}` : `Ch. ${bookmark.order}`}
+          </span>
+        </Link>
+      )}
     </main>
   );
 }
+
+

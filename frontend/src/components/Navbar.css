@@ -342,41 +342,98 @@
   color: rgba(90, 58, 41, 0.6);
 }
 
-/* ── Bookmark button inside popup ── */
+/* ── Bookmark button inside popup — PREMIUM ── */
 .popup-bookmark-btn {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1.5px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.04);
-  border-radius: 10px;
-  padding: 9px 12px;
+  border-radius: 12px;
+  padding: 11px 14px;
   cursor: pointer;
   font-family: 'Inter', sans-serif;
   font-size: 13px;
   font-weight: 600;
   color: #c8a87a;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
   text-align: left;
+  position: relative;
+  overflow: hidden;
+}
+
+.popup-bookmark-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(232, 197, 71, 0.06), transparent 60%);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
 }
 
 [data-theme="light"] .popup-bookmark-btn {
-  border-color: rgba(90, 58, 41, 0.12);
-  background: rgba(90, 58, 41, 0.04);
+  border-color: rgba(90, 58, 41, 0.15);
+  background: rgba(90, 58, 41, 0.03);
   color: #7a5a3a;
 }
 
 .popup-bookmark-btn:hover {
-  background: rgba(255, 255, 255, 0.09);
+  background: rgba(232, 197, 71, 0.08);
   border-color: rgba(232, 197, 71, 0.35);
   color: #e8c547;
+  transform: scale(1.02);
+  box-shadow: 0 2px 12px rgba(232, 197, 71, 0.12);
 }
 
+.popup-bookmark-btn:hover::before {
+  opacity: 1;
+}
+
+[data-theme="light"] .popup-bookmark-btn:hover {
+  background: rgba(200, 148, 13, 0.08);
+  border-color: rgba(200, 148, 13, 0.35);
+  color: #c8940d;
+  box-shadow: 0 2px 12px rgba(200, 148, 13, 0.1);
+}
+
+.popup-bookmark-btn:active {
+  transform: scale(0.97);
+}
+
+/* ── Active / Bookmarked state — golden glow ── */
 .popup-bookmark-btn--active {
-  background: rgba(232, 197, 71, 0.1) !important;
-  border-color: rgba(232, 197, 71, 0.35) !important;
+  background: linear-gradient(135deg, rgba(232, 197, 71, 0.15), rgba(232, 197, 71, 0.08)) !important;
+  border-color: rgba(232, 197, 71, 0.5) !important;
   color: #e8c547 !important;
+  box-shadow: 0 0 16px rgba(232, 197, 71, 0.15), inset 0 0 12px rgba(232, 197, 71, 0.06);
+}
+
+.popup-bookmark-btn--active::before {
+  opacity: 1;
+  background: linear-gradient(135deg, rgba(232, 197, 71, 0.12), transparent 70%);
+}
+
+[data-theme="light"] .popup-bookmark-btn--active {
+  background: linear-gradient(135deg, rgba(200, 148, 13, 0.12), rgba(200, 148, 13, 0.06)) !important;
+  border-color: rgba(200, 148, 13, 0.45) !important;
+  color: #c8940d !important;
+  box-shadow: 0 0 16px rgba(200, 148, 13, 0.1), inset 0 0 12px rgba(200, 148, 13, 0.05);
+}
+
+/* Bookmark icon wrapper for scale animation */
+.popup-bookmark-btn svg {
+  flex-shrink: 0;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.popup-bookmark-btn:hover svg {
+  transform: scale(1.15);
+}
+
+.popup-bookmark-btn--active svg {
+  filter: drop-shadow(0 0 4px rgba(232, 197, 71, 0.5));
 }
 
 .popup-bookmark-btn:focus-visible {

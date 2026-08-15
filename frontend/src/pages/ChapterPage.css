@@ -14,14 +14,274 @@
   padding: var(--space-xl) 0 var(--space-3xl);
 }
 
-.chapter__top-nav {
-  margin-bottom: var(--space-xl);
+/* ══════════════════════════════════════════════
+   TWO-COLUMN LAYOUT: Sidebar + Reading Content
+   ══════════════════════════════════════════════ */
+.chapter__layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 2rem;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 var(--space-xl);
+  position: relative;
 }
 
-.chapter__back-btn {
+.chapter__main {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ══════════════════════════════════════════════
+   LEFT SIDEBAR — Vertically Centered 7-Row Wheel
+   ══════════════════════════════════════════════ */
+.sidebar {
+  position: sticky;
+  top: var(--navbar-h, 56px);
+  width: 320px;
+  height: calc(100vh - var(--navbar-h, 56px) - 2rem);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  user-select: none;
+  z-index: 10;
+}
+
+.sidebar__wheel-container {
+  width: 100%;
+  height: 392px; /* Exactly 7 rows x 56px */
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 4px;
+}
+
+.sidebar__inner {
+  width: 100%;
+  height: 392px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+
+  /* Smooth fade-out at top & bottom edges for 7 rows */
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(0, 0, 0, 0.2) 8%,
+    black 22%,
+    black 78%,
+    rgba(0, 0, 0, 0.2) 92%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(0, 0, 0, 0.2) 8%,
+    black 22%,
+    black 78%,
+    rgba(0, 0, 0, 0.2) 92%,
+    transparent 100%
+  );
+
+  /* Hide scrollbar */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.sidebar__inner::-webkit-scrollbar {
+  display: none;
+}
+
+.sidebar__spacer {
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.sidebar__list {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+/* ── Each Chapter Item ── */
+.sidebar__item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 16px;
+  text-decoration: none;
+  font-family: var(--font-reading);
+  border-radius: 12px;
+  will-change: opacity, transform;
+  transition:
+    opacity 0.18s cubic-bezier(0.2, 0.9, 0.4, 1),
+    transform 0.18s cubic-bezier(0.2, 0.9, 0.4, 1),
+    color 0.18s ease;
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+
+/* ── Dynamic Focus & Distance Opacity Levels ── */
+
+/* Focus line (The exact line hovered by mouse OR the center scroll line) */
+.sidebar__item--dist-0 {
+  opacity: 1 !important;
+  color: var(--text-primary);
+  font-size: 1.45rem;
+  font-weight: 700;
+  transform: scale(1.05) translateX(6px);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* 1 row away from the cursor/focus */
+.sidebar__item--dist-1 {
+  opacity: 0.62 !important;
+  color: var(--text-secondary);
+  font-size: 1.24rem;
+  font-weight: 600;
+  transform: scale(0.97);
+}
+
+/* 2 rows away from the cursor/focus */
+.sidebar__item--dist-2 {
+  opacity: 0.32 !important;
+  color: var(--text-muted);
+  font-size: 1.06rem;
+  font-weight: 400;
+  transform: scale(0.91);
+}
+
+/* 3 rows away from the cursor/focus */
+.sidebar__item--dist-3 {
+  opacity: 0.12 !important;
+  color: var(--text-muted);
+  font-size: 0.94rem;
+  font-weight: 400;
+  transform: scale(0.86);
+}
+
+/* 4+ rows away (nearly invisible, faded out) */
+.sidebar__item--dist-4 {
+  opacity: 0.02 !important;
+  color: var(--text-muted);
+  font-size: 0.84rem;
+  transform: scale(0.80);
+}
+
+/* Currently Active Chapter */
+.sidebar__item--active.sidebar__item--dist-0 {
+  color: var(--accent) !important;
+  text-shadow: 0 0 14px rgba(232, 197, 71, 0.45);
+}
+
+.sidebar__item--active.sidebar__item--dist-1 {
+  color: var(--accent) !important;
+  opacity: 0.75 !important;
+}
+
+.sidebar__item--active.sidebar__item--dist-2 {
+  color: var(--accent) !important;
+  opacity: 0.45 !important;
+}
+
+/* Item Chapter Order Number Badge */
+.sidebar__item-num {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  font-family: var(--font-ui);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.07);
+  color: inherit;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+[data-theme="light"] .sidebar__item-num {
+  background: rgba(90, 58, 41, 0.08);
+}
+
+.sidebar__item--dist-0 .sidebar__item-num {
+  background: rgba(232, 197, 71, 0.2);
+  color: var(--accent);
+  border: 1px solid rgba(232, 197, 71, 0.45);
+  box-shadow: 0 0 10px rgba(232, 197, 71, 0.25);
+}
+
+.sidebar__item--active .sidebar__item-num {
+  background: var(--accent) !important;
+  color: var(--bg-main) !important;
+  border-color: var(--accent) !important;
+}
+
+.sidebar__item-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+/* ══════════════════════════════════════════════
+   GLOBAL SCREEN-WIDE TOP BAR (FAR LEFT ALIGNED)
+   ══════════════════════════════════════════════ */
+.chapter__top-bar {
+  max-width: 1280px;
+  margin: 0 auto 1.25rem;
+  padding: 0 var(--space-xl);
+  display: flex;
+  align-items: center;
+}
+
+/* Modern Glassmorphic Icon-only Back Button */
+.chapter__icon-back-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  text-decoration: none;
+  transition: all 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .chapter__icon-back-btn {
+  border-color: rgba(90, 58, 41, 0.16);
+  background: rgba(90, 58, 41, 0.04);
+  color: #6a4a35;
+}
+
+.chapter__icon-back-btn:hover {
+  background: rgba(232, 197, 71, 0.12);
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: translateX(-4px) scale(1.06);
+  box-shadow:
+    0 6px 20px rgba(0, 0, 0, 0.18),
+    0 0 12px rgba(232, 197, 71, 0.25);
+}
+
+[data-theme="light"] .chapter__icon-back-btn:hover {
+  background: rgba(200, 148, 13, 0.1);
+  border-color: rgba(200, 148, 13, 0.5);
+  color: #c8940d;
+  box-shadow: 0 6px 18px rgba(90, 58, 41, 0.14);
+}
+
+.chapter__icon-back-btn:active {
+  transform: scale(0.92);
 }
 
 /* Reading Article Outer Container */
@@ -78,9 +338,22 @@
   margin: 0 auto;
   padding: 0 var(--reading-padding, 2.5rem);
   font-family: 'Rasa', serif !important;
-  font-size: var(--reading-font-size, 20px);
+  font-size: var(--reading-font-size, 20px) !important;
   line-height: 1.95;
   color: var(--text-reading);
+}
+
+/* Force all child elements (p, div, span, font, b, h1-h6) to inherit dynamic font size */
+.chapter__reading-container *,
+.chapter__text-content,
+.chapter__text-content *,
+.chapter__html-content,
+.chapter__html-content * {
+  font-size: inherit !important;
+  font-family: 'Rasa', serif !important;
+  line-height: 1.95;
+  color: inherit;
+  background: transparent !important;
 }
 
 .chapter__text-content p,
@@ -100,31 +373,32 @@
 /* Force ALL inline styles to use justify — default */
 .chapter__text-content *,
 .chapter__html-content * {
-  color: inherit;
-  font-family: 'Rasa', serif !important;
-  background: transparent !important;
   text-align: justify !important;
   text-align-last: justify !important;
   text-justify: inter-word !important;
 }
 
 /*
-  Respect explicit alignment set by admin in rich text editor.
+  Respect explicit alignment set by admin in rich text editor (style or align attribute).
   Attribute selector specificity (0,2,0) > universal * (0,1,0),
   so these win even against the !important above.
 */
 .chapter__html-content [style*="text-align: center"],
-.chapter__html-content [style*="text-align:center"] {
+.chapter__html-content [style*="text-align:center"],
+.chapter__html-content [align="center"],
+.chapter__html-content center {
   text-align: center !important;
   text-align-last: center !important;
 }
 .chapter__html-content [style*="text-align: left"],
-.chapter__html-content [style*="text-align:left"] {
+.chapter__html-content [style*="text-align:left"],
+.chapter__html-content [align="left"] {
   text-align: left !important;
   text-align-last: left !important;
 }
 .chapter__html-content [style*="text-align: right"],
-.chapter__html-content [style*="text-align:right"] {
+.chapter__html-content [style*="text-align:right"],
+.chapter__html-content [align="right"] {
   text-align: right !important;
   text-align-last: right !important;
 }
@@ -276,9 +550,23 @@
   margin: 0 auto;
 }
 
+/* ══════════════════════════════════════════════
+   RESPONSIVE — Hide sidebar on mobile/tablet
+   ══════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  .sidebar {
+    display: none;
+  }
+
+  .chapter__layout {
+    padding: 0 var(--space-md);
+  }
+}
+
 @media (max-width: 768px) {
   .chapter__article { padding: var(--space-lg) var(--space-md); }
   .chapter__reading-container { padding: 0; line-height: 1.8; }
   .chapter__footer-nav { flex-direction: row; justify-content: space-between; }
   .chapter__nav-glass { width: 46px; height: 46px; border-radius: 12px; }
 }
+

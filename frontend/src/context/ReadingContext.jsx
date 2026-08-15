@@ -30,27 +30,39 @@ export function ReadingProvider({ children }) {
     document.documentElement.style.setProperty('--reading-padding', PADDING_MAP[fontSize] || '2.0rem');
   }, [fontSize]);
 
-  // ── Bookmarks (array of chapter IDs, persisted) ──
-  const [bookmarks, setBookmarks] = useState(() => {
+  // ── Single Bookmark (only ONE chapter at a time, persisted) ──
+  const [bookmark, setBookmarkState] = useState(() => {
     try {
-      const saved = JSON.parse(localStorage.getItem('bc-bookmarks') || '[]');
-      return Array.isArray(saved) ? saved : [];
+      const saved = JSON.parse(localStorage.getItem('bc-bookmark'));
+      return saved && saved.chapterId ? saved : null;
     } catch {
-      return [];
+      return null;
     }
   });
 
-  const toggleBookmark = (chapterId) => {
-    setBookmarks(prev => {
-      const next = prev.includes(chapterId)
-        ? prev.filter(id => id !== chapterId)
-        : [...prev, chapterId];
-      localStorage.setItem('bc-bookmarks', JSON.stringify(next));
-      return next;
-    });
+  // Set bookmark — replaces any existing bookmark
+  const setBookmark = (chapterId, title, order) => {
+    const bm = { chapterId, title, order };
+    setBookmarkState(bm);
+    localStorage.setItem('bc-bookmark', JSON.stringify(bm));
   };
 
-  const isBookmarked = (chapterId) => bookmarks.includes(chapterId);
+  // Remove bookmark
+  const removeBookmark = () => {
+    setBookmarkState(null);
+    localStorage.removeItem('bc-bookmark');
+  };
+
+  // Toggle: if same chapter → remove, otherwise → set new
+  const toggleBookmark = (chapterId, title, order) => {
+    if (bookmark && bookmark.chapterId === chapterId) {
+      removeBookmark();
+    } else {
+      setBookmark(chapterId, title, order);
+    }
+  };
+
+  const isBookmarked = (chapterId) => bookmark?.chapterId === chapterId;
 
   // ── Current chapter ID (set by ChapterPage) ──
   const [currentChapterId, setCurrentChapterId] = useState(null);
@@ -58,7 +70,7 @@ export function ReadingProvider({ children }) {
   return (
     <ReadingContext.Provider value={{
       fontSize, setFontSize,
-      bookmarks, toggleBookmark, isBookmarked,
+      bookmark, toggleBookmark, isBookmarked,
       currentChapterId, setCurrentChapterId,
     }}>
       {children}
@@ -71,3 +83,4 @@ export function useReading() {
   if (!ctx) throw new Error('useReading must be used within ReadingProvider');
   return ctx;
 }
+

@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useLanguage } from '../context/LanguageContext';
 import { useReading } from '../context/ReadingContext';
-import { IconArrowLeft, IconAlert, IconChevronLeft, IconChevronRight } from '../components/Icons';
+import { IconArrowLeft, IconAlert, IconChevronLeft, IconChevronRight, IconBook } from '../components/Icons';
 import './ChapterPage.css';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
@@ -24,18 +24,36 @@ function LoadingSkeleton() {
 
 export default function ChapterPage() {
   const { id }                          = useParams();
+  const navigate                        = useNavigate();
   const [chapterData, setChapterData]   = useState(null);
+  const [allChapters, setAllChapters]   = useState([]);
   const [loading, setLoading]           = useState(true);
   const [error, setError]               = useState(null);
   const [progress, setProgress]         = useState(0);
+  const [hoveredIndex, setHoveredIndex] = useState(null);
+  const [scrollFocusIndex, setScrollFocusIndex] = useState(0);
   const { lang }                        = useLanguage();
   const { fontSize, setCurrentChapterId } = useReading();
+  const sidebarRef                      = useRef(null);
+
+  const ITEM_HEIGHT = 56;
 
   // Tell Navbar which chapter is open (for bookmark btn)
   useEffect(() => {
     setCurrentChapterId(id ? Number(id) : null);
     return () => setCurrentChapterId(null);
   }, [id, setCurrentChapterId]);
+
+  // Fetch all chapters for sidebar
+  useEffect(() => {
+    axios.get(`${API_BASE}/api/chapters`)
+      .then(({ data }) => {
+        setAllChapters(data);
+        const activeIdx = data.findIndex(c => c.id === Number(id));
+        if (activeIdx >= 0) setScrollFocusIndex(activeIdx);
+      })
+      .catch(() => {});
+  }, [id]);
 
   const fetchChapter = useCallback(async () => {
     try {
@@ -63,6 +81,50 @@ export default function ChapterPage() {
     fetchChapter();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [fetchChapter]);
+
+  // Auto-scroll sidebar to active chapter on load/change
+  useEffect(() => {
+    if (!sidebarRef.current || !id || allChapters.length === 0) return;
+    const activeIdx = allChapters.findIndex(c => c.id === Number(id));
+    if (activeIdx >= 0) {
+      setScrollFocusIndex(activeIdx);
+      sidebarRef.current.scrollTop = activeIdx * ITEM_HEIGHT;
+    }
+  }, [id, allChapters]);
+
+  // Fast, responsive mouse wheel scrolling on sidebar (isolated from page scroll)
+  useEffect(() => {
+    const el = sidebarRef.current;
+    if (!el) return;
+
+    const handleWheel = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      // Multiply delta for responsive, snappy scrolling
+      const factor = e.deltaMode === 1 ? 40 : (Math.abs(e.deltaY) < 40 ? 2.5 : 1.2);
+      el.scrollTop += e.deltaY * factor;
+    };
+
+    el.addEventListener('wheel', handleWheel, { passive: false });
+    return () => el.removeEventListener('wheel', handleWheel);
+  }, []);
+
+  // Throttled focus index calculation during scroll using requestAnimationFrame
+  const isScrollingRef = useRef(false);
+  const handleSidebarScroll = () => {
+    if (!sidebarRef.current || isScrollingRef.current) return;
+    isScrollingRef.current = true;
+    window.requestAnimationFrame(() => {
+      if (sidebarRef.current) {
+        const top = sidebarRef.current.scrollTop;
+        const currentIdx = Math.round(top / ITEM_HEIGHT);
+        if (currentIdx >= 0 && currentIdx < allChapters.length) {
+          setScrollFocusIndex(currentIdx);
+        }
+      }
+      isScrollingRef.current = false;
+    });
+  };
 
   // Reading progress bar
   useEffect(() => {
@@ -96,6 +158,14 @@ export default function ChapterPage() {
 
   const rawContent = getContent();
 
+  // Sanitize content to strip hardcoded font-size/legacy font tags while keeping alignments (center, right, etc.)
+  const sanitizedContent = rawContent
+    .replace(/font-size\s*:\s*[^;"]+;?/gi, '')
+    .replace(/<font[^>]*>/gi, '')
+    .replace(/<\/font>/gi, '');
+
+  const activeFocusIdx = hoveredIndex !== null ? hoveredIndex : scrollFocusIndex;
+
   return (
     <>
       {/* Reading Progress Bar */}
@@ -110,109 +180,159 @@ export default function ChapterPage() {
       />
 
       <main id="main-content" className="chapter">
-        <div className="page-container">
-          {/* Top navigation */}
-          <div className="chapter__top-nav">
-            <Link to="/" id="back-to-home" className="btn btn-ghost btn-sm chapter__back-btn">
-              <IconArrowLeft size={16} />
-              {lang === 'gu' ? 'મુખ્ય પૃષ્ઠ' : 'Back to Chapters'}
-            </Link>
-          </div>
+        {/* Screen-Wide Far-Left Aligned Back Button */}
+        <div className="chapter__top-bar">
+          <Link
+            to="/"
+            id="back-to-home"
+            className="chapter__icon-back-btn"
+            aria-label={lang === 'gu' ? 'મુખ્ય પૃષ્ઠ' : 'Back to Chapters'}
+            title={lang === 'gu' ? 'મુખ્ય પૃષ્ઠ' : 'Back to Chapters'}
+          >
+            <IconArrowLeft size={20} />
+          </Link>
+        </div>
 
-          {loading ? (
-            <LoadingSkeleton />
-          ) : error ? (
-            <div className="chapter__error" role="alert">
-              <IconAlert size={36} color="var(--accent)" />
-              <h1>{lang === 'gu' ? 'પ્રકરણ મળ્યું નથી' : 'Chapter Not Found'}</h1>
-              <p>{error}</p>
-              <Link to="/" className="btn btn-primary" style={{ marginTop: '1rem' }}>
-                {lang === 'gu' ? 'મુખ્ય પૃષ્ઠ પર પાછા જાઓ' : 'Return Home'}
-              </Link>
-            </div>
-          ) : (
-            <article className="chapter__article">
-              {/* Chapter Header */}
-              <header className="chapter__header">
-                <span className="chapter__order-badge">
-                  {lang === 'gu' ? `પ્રકરણ ${chapter.order}` : `Chapter ${chapter.order}`}
-                </span>
-                <h1 className="chapter__title">{getTitle(chapter)}</h1>
-              </header>
+        <div className="chapter__layout">
 
-              <div className="chapter__divider" aria-hidden="true" />
-
-              {/* Reading content — font size from context */}
+          {/* ── LEFT SIDEBAR — 7-Row Dynamic Optical Focus Chapter List ── */}
+          <aside className="sidebar" aria-label="Chapter list">
+            <div
+              className="sidebar__wheel-container"
+              onMouseLeave={() => setHoveredIndex(null)}
+            >
               <div
-                className="chapter__reading-container font-rasa"
-                style={{ fontSize: `${fontSize}px` }}
+                className="sidebar__inner"
+                ref={sidebarRef}
+                onScroll={handleSidebarScroll}
               >
-                {rawContent.includes('<p>') || rawContent.includes('<div>') || rawContent.includes('style=') || rawContent.includes('<br>') ? (
-                  <div
-                    className="chapter__html-content"
-                    dangerouslySetInnerHTML={{ __html: rawContent }}
-                  />
-                ) : (
-                  <div className="chapter__text-content">
-                    {rawContent.split('\n\n').map((paragraph, i) => (
-                      <p key={i}>{paragraph}</p>
-                    ))}
-                  </div>
-                )}
+                {/* 3 items spacer on top so 1st item can be centered in 7 rows */}
+                <div className="sidebar__spacer" style={{ height: `${ITEM_HEIGHT * 3}px` }} />
+                <nav className="sidebar__list">
+                  {allChapters.map((ch, idx) => {
+                    const diff = Math.abs(idx - activeFocusIdx);
+                    const isFocus = diff === 0;
+                    const isCurrent = ch.id === Number(id);
+
+                    return (
+                      <Link
+                        key={ch.id}
+                        to={`/chapter/${ch.id}`}
+                        onMouseEnter={() => setHoveredIndex(idx)}
+                        onMouseMove={() => { if (hoveredIndex !== idx) setHoveredIndex(idx); }}
+                        className={`sidebar__item sidebar__item--dist-${Math.min(diff, 4)} ${isFocus ? 'sidebar__item--focus' : ''} ${isCurrent ? 'sidebar__item--active' : ''}`}
+                        style={{ height: `${ITEM_HEIGHT}px` }}
+                      >
+                        <span className="sidebar__item-num">{ch.order}</span>
+                        <span className="sidebar__item-title">{getTitle(ch)}</span>
+                      </Link>
+                    );
+                  })}
+                </nav>
+                {/* 3 items spacer on bottom so last item can be centered in 7 rows */}
+                <div className="sidebar__spacer" style={{ height: `${ITEM_HEIGHT * 3}px` }} />
               </div>
+            </div>
+          </aside>
 
-              {/* ── Previous & Next — Glass buttons ── */}
-              <nav className="chapter__footer-nav" aria-label="Chapter navigation">
-                {prevChapter ? (
-                  <Link
-                    to={`/chapter/${prevChapter.id}`}
-                    id={`prev-chapter-${prevChapter.id}`}
-                    className="chapter__nav-glass chapter__nav-glass--prev"
-                    aria-label={lang === 'gu' ? `અગાઉનું: ${getTitle(prevChapter)}` : `Previous: ${getTitle(prevChapter)}`}
-                    title={getTitle(prevChapter)}
-                  >
-                    <IconChevronLeft size={22} color="currentColor" />
-                  </Link>
-                ) : (
-                  <div className="chapter__nav-glass chapter__nav-glass--disabled" aria-hidden="true">
-                    <IconChevronLeft size={22} color="currentColor" />
-                  </div>
-                )}
-
-                <div className="chapter__nav-center">
-                  <span className="chapter__nav-current">
+          {/* ── RIGHT — Reading Content ── */}
+          <div className="chapter__main">
+            {loading ? (
+              <LoadingSkeleton />
+            ) : error ? (
+              <div className="chapter__error" role="alert">
+                <IconAlert size={36} color="var(--accent)" />
+                <h1>{lang === 'gu' ? 'પ્રકરણ મળ્યું નથી' : 'Chapter Not Found'}</h1>
+                <p>{error}</p>
+                <Link to="/" className="btn btn-primary" style={{ marginTop: '1rem' }}>
+                  {lang === 'gu' ? 'મુખ્ય પૃષ્ઠ પર પાછા જાઓ' : 'Return Home'}
+                </Link>
+              </div>
+            ) : (
+              <article className="chapter__article">
+                {/* Chapter Header */}
+                <header className="chapter__header">
+                  <span className="chapter__order-badge font-rasa">
                     {lang === 'gu' ? `પ્રકરણ ${chapter.order}` : `Chapter ${chapter.order}`}
                   </span>
-                  <span className="chapter__nav-dots" aria-hidden="true">
-                    {[prevChapter, chapter, nextChapter].map((ch, i) => (
-                      <span
-                        key={i}
-                        className={`chapter__nav-dot ${ch?.id === chapter?.id ? 'chapter__nav-dot--active' : ''} ${!ch ? 'chapter__nav-dot--empty' : ''}`}
-                      />
-                    ))}
-                  </span>
+                  <h1 className="chapter__title font-rasa">{getTitle(chapter)}</h1>
+                </header>
+
+                <div className="chapter__divider" aria-hidden="true" />
+
+                {/* Reading content — font size from context with forced justify default */}
+                <div
+                  className="chapter__reading-container font-rasa"
+                  style={{ fontSize: `${fontSize}px` }}
+                >
+                  {sanitizedContent.includes('<p>') || sanitizedContent.includes('<div>') || sanitizedContent.includes('style=') || sanitizedContent.includes('<br>') ? (
+                    <div
+                      className="chapter__html-content"
+                      dangerouslySetInnerHTML={{ __html: sanitizedContent }}
+                    />
+                  ) : (
+                    <div className="chapter__text-content">
+                      {sanitizedContent.split('\n\n').map((paragraph, i) => (
+                        <p key={i}>{paragraph}</p>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
-                {nextChapter ? (
-                  <Link
-                    to={`/chapter/${nextChapter.id}`}
-                    id={`next-chapter-${nextChapter.id}`}
-                    className="chapter__nav-glass chapter__nav-glass--next"
-                    aria-label={lang === 'gu' ? `આગળ: ${getTitle(nextChapter)}` : `Next: ${getTitle(nextChapter)}`}
-                    title={getTitle(nextChapter)}
-                  >
-                    <IconChevronRight size={22} color="currentColor" />
-                  </Link>
-                ) : (
-                  <div className="chapter__nav-glass chapter__nav-glass--disabled" aria-hidden="true">
-                    <IconChevronRight size={22} color="currentColor" />
+                {/* ── Previous & Next — Glass buttons ── */}
+                <nav className="chapter__footer-nav" aria-label="Chapter navigation">
+                  {prevChapter ? (
+                    <Link
+                      to={`/chapter/${prevChapter.id}`}
+                      id={`prev-chapter-${prevChapter.id}`}
+                      className="chapter__nav-glass chapter__nav-glass--prev"
+                      aria-label={lang === 'gu' ? `અગાઉનું: ${getTitle(prevChapter)}` : `Previous: ${getTitle(prevChapter)}`}
+                      title={getTitle(prevChapter)}
+                    >
+                      <IconChevronLeft size={22} color="currentColor" />
+                    </Link>
+                  ) : (
+                    <div className="chapter__nav-glass chapter__nav-glass--disabled" aria-hidden="true">
+                      <IconChevronLeft size={22} color="currentColor" />
+                    </div>
+                  )}
+
+                  <div className="chapter__nav-center">
+                    <span className="chapter__nav-current font-rasa">
+                      {lang === 'gu' ? `પ્રકરણ ${chapter.order}` : `Chapter ${chapter.order}`}
+                    </span>
+                    <span className="chapter__nav-dots" aria-hidden="true">
+                      {[prevChapter, chapter, nextChapter].map((ch, i) => (
+                        <span
+                          key={i}
+                          className={`chapter__nav-dot ${ch?.id === chapter?.id ? 'chapter__nav-dot--active' : ''} ${!ch ? 'chapter__nav-dot--empty' : ''}`}
+                        />
+                      ))}
+                    </span>
                   </div>
-                )}
-              </nav>
-            </article>
-          )}
+
+                  {nextChapter ? (
+                    <Link
+                      to={`/chapter/${nextChapter.id}`}
+                      id={`next-chapter-${nextChapter.id}`}
+                      className="chapter__nav-glass chapter__nav-glass--next"
+                      aria-label={lang === 'gu' ? `આગળ: ${getTitle(nextChapter)}` : `Next: ${getTitle(nextChapter)}`}
+                      title={getTitle(nextChapter)}
+                    >
+                      <IconChevronRight size={22} color="currentColor" />
+                    </Link>
+                  ) : (
+                    <div className="chapter__nav-glass chapter__nav-glass--disabled" aria-hidden="true">
+                      <IconChevronRight size={22} color="currentColor" />
+                    </div>
+                  )}
+                </nav>
+              </article>
+            )}
+          </div>
         </div>
       </main>
     </>
   );
 }
+

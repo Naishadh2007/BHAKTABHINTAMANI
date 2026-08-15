@@ -1,0 +1,42 @@
+name: Deploy to InfinityFree
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Build and Sync to InfinityFree
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: ?? Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: ?? Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: ?? Build Frontend
+        run: |
+          cd frontend
+          npm ci
+          npm run build
+
+      - name: ?? Sync Files to InfinityFree FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          server-dir: /htdocs/
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            backend/vendor/**
+            backend/storage/logs/**

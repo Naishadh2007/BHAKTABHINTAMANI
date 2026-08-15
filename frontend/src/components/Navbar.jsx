@@ -17,10 +17,10 @@ export default function Navbar() {
   const { lang, toggleLanguage } = useLanguage();
   const location = useLocation();
 
-  const { fontSize, setFontSize, bookmarks, toggleBookmark, currentChapterId } = useReading();
+  const { fontSize, setFontSize, bookmark, toggleBookmark, isBookmarked, currentChapterId } = useReading();
 
-  const isChapterPage = location.pathname.startsWith('/chapter/');
-  const isBookmarked  = currentChapterId ? bookmarks.includes(Number(currentChapterId)) : false;
+  const isChapterPage   = location.pathname.startsWith('/chapter/');
+  const chapterBookmark = currentChapterId ? isBookmarked(Number(currentChapterId)) : false;
 
   // 3-dot popup state
   const [menuOpen, setMenuOpen] = useState(false);
@@ -168,15 +168,15 @@ export default function Navbar() {
                       </div>
                       <button
                         id="popup-bookmark-btn"
-                        className={`popup-bookmark-btn ${isBookmarked ? 'popup-bookmark-btn--active' : ''}`}
-                        onClick={() => currentChapterId && toggleBookmark(Number(currentChapterId))}
-                        aria-label={isBookmarked ? 'Remove bookmark' : 'Add bookmark'}
+                        className={`popup-bookmark-btn ${chapterBookmark ? 'popup-bookmark-btn--active' : ''}`}
+                        onClick={() => currentChapterId && toggleBookmark(Number(currentChapterId), '', Number(currentChapterId))}
+                        aria-label={chapterBookmark ? 'Remove bookmark' : 'Add bookmark'}
                       >
-                        {isBookmarked
+                        {chapterBookmark
                           ? <IconBookmarkFilled size={16} color="var(--accent)" />
                           : <IconBookmark size={16} color="currentColor" />}
                         <span>
-                          {isBookmarked
+                          {chapterBookmark
                             ? (lang === 'gu' ? 'સેવ થઈ ગઈ' : 'Bookmarked')
                             : (lang === 'gu' ? 'બુકમાર્ક ઉમેરો' : 'Add Bookmark')}
                         </span>
