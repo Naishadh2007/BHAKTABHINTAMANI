@@ -36,15 +36,15 @@ export default function AdminTopbar({ title }) {
         </button>
 
         {/* View public site */}
-        <Link
-          to="/"
+        <a
+          href="https://bhaktachintamani.gt.tc"
           target="_blank"
           rel="noopener noreferrer"
           className="btn btn-ghost btn-sm"
           title="View public site"
         >
           <IconGlobe size={16} /> View Site
-        </Link>
+        </a>
 
         {/* Admin info + logout */}
         <div className="topbar-admin">

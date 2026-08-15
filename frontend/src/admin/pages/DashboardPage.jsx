@@ -94,7 +94,7 @@ export default function DashboardPage() {
               <IconUsers size={16} /> Manage Users
             </Link>
           </PermissionGate>
-          <a href="http://localhost:5173" target="_blank" rel="noopener noreferrer" className="btn btn-ghost">
+          <a href="https://bhaktachintamani.gt.tc" target="_blank" rel="noopener noreferrer" className="btn btn-ghost">
             <IconGlobe size={16} /> View Public Site
           </a>
         </div>
