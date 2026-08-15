@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import axios from 'axios';
 import PermissionGate from '../components/PermissionGate';
 import StatusBadge from '../components/StatusBadge';
 import {
@@ -13,6 +14,7 @@ import {
 } from '../../components/Icons';
 
 const LIMIT = 30;
+const CHAPTERS_API = 'https://bhaktachintamani.freedev.app/api_admin_chapters.php';
 
 export default function ChaptersPage() {
   const { authAxios } = useAuth();
@@ -53,24 +55,21 @@ export default function ChaptersPage() {
     setInitialLoad(true);
   }, [debouncedSearch, statusFilter, sortCol, sortDir]);
 
-  // Fetch chapters
+  // Fetch chapters via direct PHP API
   const fetchChapters = useCallback(async (pageNum) => {
     if (loading) return;
     setLoading(true);
     try {
-      const ax = authAxios();
       const params = new URLSearchParams({
-        page:   pageNum,
-        limit:  LIMIT,
-        sort:   sortCol,
-        dir:    sortDir,
+        page:  pageNum,
+        limit: LIMIT,
+        sort:  sortCol,
+        dir:   sortDir,
         ...(debouncedSearch && { search: debouncedSearch }),
-        ...(statusFilter     && { status: statusFilter }),
+        ...(statusFilter    && { status: statusFilter }),
       });
-      const { data } = await ax.get(`/chapters?${params}`);
-      const rows = Array.isArray(data?.data) ? data.data
-                 : Array.isArray(data)        ? data
-                 : [];
+      const { data } = await axios.get(`${CHAPTERS_API}?${params}`);
+      const rows = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
       if (pageNum === 1) {
         setChapters(rows);
       } else {
@@ -84,7 +83,7 @@ export default function ChaptersPage() {
       setLoading(false);
       setInitialLoad(false);
     }
-  }, [authAxios, debouncedSearch, statusFilter, sortCol, sortDir]);
+  }, [loading, debouncedSearch, statusFilter, sortCol, sortDir]);
 
   // Trigger fetch when page/filters change
   useEffect(() => {
@@ -133,7 +132,7 @@ export default function ChaptersPage() {
     if (!selected.size) return;
     setBulkLoading(true);
     try {
-      await authAxios().post('/chapters/bulk', {
+      await axios.post(`${CHAPTERS_API}?bulk=1`, {
         ids: [...selected],
         action,
       });
@@ -143,7 +142,7 @@ export default function ChaptersPage() {
       setSelected(new Set());
       setInitialLoad(true);
     } catch (e) {
-      alert(e.response?.data?.error || 'Bulk action failed');
+      alert('Bulk action failed');
     } finally {
       setBulkLoading(false);
     }
@@ -153,11 +152,11 @@ export default function ChaptersPage() {
   const deleteChapter = async (id) => {
     if (!confirm('Delete this chapter permanently?')) return;
     try {
-      await authAxios().delete(`/chapters/${id}`);
+      await axios.delete(`${CHAPTERS_API}?id=${id}`);
       setChapters(prev => prev.filter(c => c.id !== id));
       setTotal(t => t - 1);
     } catch (e) {
-      alert(e.response?.data?.error || 'Delete failed');
+      alert('Delete failed');
     }
   };
 

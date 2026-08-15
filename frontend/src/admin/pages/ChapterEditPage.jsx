@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import axios from 'axios';
 import RichTextEditor from '../components/RichTextEditor';
 import { IconArrowLeft } from '../../components/Icons';
+
+const CHAPTERS_API = 'https://bhaktachintamani.freedev.app/api_admin_chapters.php';
 
 const EMPTY = {
   title_gu: '', title_en: '',
@@ -12,10 +14,9 @@ const EMPTY = {
 };
 
 export default function ChapterEditPage() {
-  const { id }        = useParams();
-  const isEdit        = Boolean(id);
-  const navigate      = useNavigate();
-  const { authAxios } = useAuth();
+  const { id }   = useParams();
+  const isEdit   = Boolean(id);
+  const navigate = useNavigate();
 
   const [form, setForm]         = useState(EMPTY);
   const [activeTab, setActiveTab] = useState('gu'); // 'gu' or 'en'
@@ -26,7 +27,7 @@ export default function ChapterEditPage() {
   // Load existing chapter for edit
   useEffect(() => {
     if (!isEdit) return;
-    authAxios().get(`/chapters/${id}`)
+    axios.get(`${CHAPTERS_API}?id=${id}`)
       .then(r => setForm({
         title_gu:       r.data.title_gu       || r.data.title || '',
         title_en:       r.data.title_en       || r.data.title || '',
@@ -39,7 +40,7 @@ export default function ChapterEditPage() {
       }))
       .catch(() => setError('Could not load chapter.'))
       .finally(() => setLoading(false));
-  }, [id, isEdit, authAxios]);
+  }, [id, isEdit]);
 
   const set = (key) => (valOrE) => {
     const value = valOrE?.target ? valOrE.target.value : valOrE;
@@ -58,20 +59,14 @@ export default function ChapterEditPage() {
     };
 
     try {
-      const ax = authAxios();
       if (isEdit) {
-        await ax.put(`/chapters/${id}`, payload);
+        await axios.put(`${CHAPTERS_API}?id=${id}`, payload);
       } else {
-        await ax.post('/chapters', payload);
+        await axios.post(CHAPTERS_API, payload);
       }
       navigate('/admin/chapters');
     } catch (err) {
-      const msgs = err.response?.data?.errors;
-      if (msgs) {
-        setError(Object.values(msgs).flat().join(' '));
-      } else {
-        setError(err.response?.data?.message || 'Save failed. Please try again.');
-      }
+      setError('Save failed. Please try again.');
     } finally {
       setSaving(false);
     }
