@@ -60,14 +60,21 @@ try {
     ];
 
     foreach ($defaultAdmins as $def) {
-        $hash = password_hash($def['password'], PASSWORD_BCRYPT);
-        $stmtCheck = $pdo->prepare("SELECT id FROM admins WHERE LOWER(email) = LOWER(?)");
+        $stmtCheck = $pdo->prepare("SELECT id, password FROM admins WHERE LOWER(email) = LOWER(?)");
         $stmtCheck->execute([$def['email']]);
         $existing = $stmtCheck->fetch();
 
         if ($existing) {
-            $pdo->prepare("UPDATE admins SET password = ?, is_super_admin = 1 WHERE id = ?")->execute([$hash, $existing['id']]);
+            // Only update password if current stored hash doesn't verify
+            if (!password_verify($def['password'], $existing['password'])) {
+                $newHash = password_hash($def['password'], PASSWORD_BCRYPT);
+                $pdo->prepare("UPDATE admins SET password = ?, is_super_admin = 1 WHERE id = ?")->execute([$newHash, $existing['id']]);
+            } else {
+                // Just ensure super admin flag is set
+                $pdo->prepare("UPDATE admins SET is_super_admin = 1 WHERE id = ?")->execute([$existing['id']]);
+            }
         } else {
+            $hash = password_hash($def['password'], PASSWORD_BCRYPT);
             $pdo->prepare("INSERT INTO admins (name, email, password, is_super_admin, created_at, updated_at) VALUES (?, ?, ?, 1, NOW(), NOW())")
                 ->execute([$def['name'], strtolower($def['email']), $hash]);
         }
