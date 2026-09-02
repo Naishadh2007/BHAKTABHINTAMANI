@@ -1,7 +1,7 @@
 <?php
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
+ini_set('display_errors', 0);
+error_reporting(0);
+ob_start();
 
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
@@ -149,6 +149,7 @@ try {
             'manage_settings' => true,
         ];
 
+        if (ob_get_length()) ob_clean();
         echo json_encode([
             'token' => $plainToken,
             'admin' => [

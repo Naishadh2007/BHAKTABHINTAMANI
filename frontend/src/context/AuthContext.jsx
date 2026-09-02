@@ -48,8 +48,27 @@ export function AuthProvider({ children }) {
       throw new Error(msg);
     }
 
-    const { token: t, admin: a } = res.data;
-    if (!t || !a) throw new Error('Invalid response from server. Please try again.');
+    let data = res.data;
+    if (typeof data === 'string') {
+      try {
+        // Strip any unexpected HTML or trailing scripts added by free host
+        const jsonStart = data.indexOf('{');
+        const jsonEnd = data.lastIndexOf('}');
+        if (jsonStart !== -1 && jsonEnd !== -1) {
+          data = JSON.parse(data.substring(jsonStart, jsonEnd + 1));
+        }
+      } catch (e) {
+        console.error('Failed to parse JSON response:', e, data);
+      }
+    }
+
+    const t = data?.token;
+    const a = data?.admin;
+
+    if (!t || !a) {
+      console.error('Received server response:', data);
+      throw new Error(data?.message || 'Invalid response from server. Please try again.');
+    }
     setToken(t);
     setAdmin(a);
     sessionStorage.setItem('rv-token', t);
