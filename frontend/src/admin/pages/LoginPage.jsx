@@ -27,7 +27,8 @@ export default function LoginPage() {
         navigate('/admin/dashboard');
       }
     } catch (err) {
-      const msg = err.response?.data?.message
+      const msg = err.message
+        || err.response?.data?.message
         || err.response?.data?.errors?.email?.[0]
         || 'Invalid credentials. Please try again.';
       setError(msg);

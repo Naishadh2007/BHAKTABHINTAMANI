@@ -34,7 +34,12 @@ export function AuthProvider({ children }) {
       try {
         res = await axios.post(`${ADMIN_PHP}?action=login`, { email, password });
       } catch (err) {
-        lastError = err;
+        try {
+          // Relative path fallback
+          res = await axios.post(`/api_admin.php?action=login`, { email, password });
+        } catch (err2) {
+          lastError = err2 || err;
+        }
       }
     }
 
