@@ -57,7 +57,7 @@ try {
       KEY `personal_access_tokens_tokenable_type_tokenable_id_index` (`tokenable_type`,`tokenable_id`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
 
-    // Ensure default super admin accounts exist with correct bcrypt hashes
+    // Ensure default super admin accounts exist
     $defaultAdmins = [
         ['name' => 'Main Admin', 'email' => 'naishad@ssgd.com', 'password' => 'naishad@123'],
         ['name' => 'ReadVerse Admin', 'email' => 'admin@readverse.com', 'password' => 'password'],
@@ -69,12 +69,10 @@ try {
         $existing = $stmtCheck->fetch();
 
         if ($existing) {
-            // Only update password if current stored hash doesn't verify
             if (!password_verify($def['password'], $existing['password'])) {
                 $newHash = password_hash($def['password'], PASSWORD_BCRYPT);
                 $pdo->prepare("UPDATE admins SET password = ?, is_super_admin = 1 WHERE id = ?")->execute([$newHash, $existing['id']]);
             } else {
-                // Just ensure super admin flag is set
                 $pdo->prepare("UPDATE admins SET is_super_admin = 1 WHERE id = ?")->execute([$existing['id']]);
             }
         } else {
@@ -118,7 +116,6 @@ try {
         $stmt->execute([$email]);
         $admin = $stmt->fetch();
 
-        // Check password matching (support standard verify, direct matching for default super admin, or plain text fallback)
         $isValid = false;
         if ($admin) {
             if (password_verify($password, $admin['password'])) {
@@ -138,11 +135,9 @@ try {
             exit;
         }
 
-        // Generate token
         $plainToken = bin2hex(random_bytes(32));
         $hashedToken = hash('sha256', $plainToken);
 
-        // Delete old tokens and insert new
         $pdo->prepare("DELETE FROM personal_access_tokens WHERE tokenable_id = ? AND tokenable_type = 'App\\\\Models\\\\Admin'")->execute([$admin['id']]);
         $stmtToken = $pdo->prepare("INSERT INTO personal_access_tokens (tokenable_type, tokenable_id, name, token, abilities, created_at, updated_at) VALUES ('App\\\\Models\\\\Admin', ?, 'admin-panel', ?, '[\"*\"]', NOW(), NOW())");
         $stmtToken->execute([$admin['id'], $hashedToken]);
@@ -218,7 +213,7 @@ try {
         exit;
     }
 
-} catch (PDOException $e) {
+} catch (Throwable $e) {
     http_response_code(500);
     echo json_encode(['error' => true, 'message' => $e->getMessage()]);
 }
