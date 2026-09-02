@@ -34,8 +34,9 @@ jobs:
         env:
           VITE_API_URL: https://bhaktachintamani.freedev.app
 
-      - name: Copy built frontend into backend/public
+      - name: Copy built frontend into backend root and backend/public
         run: |
+          cp -r frontend/dist/. backend/
           cp -r frontend/dist/. backend/public/
 
       - name: Sync Backend + Frontend to freedev.app (Main App & API)
