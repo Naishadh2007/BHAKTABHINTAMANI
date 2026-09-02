@@ -17,10 +17,13 @@
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
 
-  # 2. Route /api/* → Laravel (index.php bootstraps from public/)
+  # 2. Directly allow any .php file execution
+  RewriteRule \.php$ - [L]
+
+  # 3. Route /api/* → Laravel (index.php bootstraps from public/)
   RewriteRule ^(api|public/api|test_db)(/.*)? index.php [L,QSA]
 
-  # 3. React SPA — all other routes → index.html
+  # 4. React SPA — all other routes → index.html
   RewriteRule ^ index.html [L]
 </IfModule>
 

@@ -17,6 +17,9 @@
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
 
+  # Allow direct .php execution
+  RewriteRule \.php$ - [L]
+
   # Route /api/* and Laravel routes to Laravel index.php
   RewriteRule ^api/(.*)$ index.php [L,QSA]
   RewriteRule ^public/api/(.*)$ index.php [L,QSA]
