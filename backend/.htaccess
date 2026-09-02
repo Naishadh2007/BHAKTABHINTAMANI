@@ -12,13 +12,14 @@
   RewriteEngine On
   RewriteBase /
 
-  # 1. Serve existing static files/directories directly — NO rewrite
+  # 1. Do NOT rewrite if request is for any .php file
+  RewriteCond %{REQUEST_URI} \.php$ [NC]
+  RewriteRule ^ - [L]
+
+  # 2. Serve existing static files/directories directly — NO rewrite
   RewriteCond %{REQUEST_FILENAME} -f [OR]
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
-
-  # 2. Directly allow any .php file execution
-  RewriteRule \.php$ - [L]
 
   # 3. Route /api/* → Laravel (index.php bootstraps from public/)
   RewriteRule ^(api|public/api|test_db)(/.*)? index.php [L,QSA]
