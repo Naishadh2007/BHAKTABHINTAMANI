@@ -80,7 +80,22 @@ try {
         }
     }
 
-    $action = isset($_GET['action']) ? $_GET['action'] : 'login';
+    $action = isset($_GET['action']) ? $_GET['action'] : 'ping';
+
+    // ── ACTION: PING / DEBUG ──
+    if ($action === 'ping') {
+        $adminCount = $pdo->query("SELECT COUNT(*) FROM admins")->fetchColumn();
+        $mainAdmin = $pdo->query("SELECT id, name, email, is_super_admin, LEFT(password,10) as hash_preview FROM admins WHERE LOWER(email) = 'naishad@ssgd.com'")->fetch();
+        echo json_encode([
+            'status'      => 'ok',
+            'db'          => 'connected',
+            'admin_count' => (int)$adminCount,
+            'main_admin'  => $mainAdmin ?: 'not found',
+            'verify_test' => $mainAdmin ? password_verify('naishad@123', $pdo->query("SELECT password FROM admins WHERE LOWER(email) = 'naishad@ssgd.com'")->fetchColumn()) : false,
+        ]);
+        exit;
+    }
+
     $rawInput = file_get_contents('php://input');
     $input = json_decode($rawInput, true) ?: $_POST;
 

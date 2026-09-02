@@ -20,14 +20,31 @@ export function AuthProvider({ children }) {
 
   const login = useCallback(async (email, password) => {
     let res;
+    let lastError;
+
+    // 1. Try Laravel API first
     try {
-      // Try Laravel API first (primary)
       res = await axios.post(`${API}/login`, { email, password });
     } catch (err) {
-      // Fallback to PHP script
-      res = await axios.post(`${ADMIN_PHP}?action=login`, { email, password });
+      lastError = err;
     }
+
+    // 2. Fallback to direct PHP script if Laravel failed
+    if (!res) {
+      try {
+        res = await axios.post(`${ADMIN_PHP}?action=login`, { email, password });
+      } catch (err) {
+        lastError = err;
+      }
+    }
+
+    if (!res || !res.data) {
+      const msg = lastError?.response?.data?.message || lastError?.message || 'Login failed. Please try again.';
+      throw new Error(msg);
+    }
+
     const { token: t, admin: a } = res.data;
+    if (!t || !a) throw new Error('Invalid response from server. Please try again.');
     setToken(t);
     setAdmin(a);
     sessionStorage.setItem('rv-token', t);
