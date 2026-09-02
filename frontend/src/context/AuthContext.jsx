@@ -22,24 +22,43 @@ export function AuthProvider({ children }) {
     let res;
     let lastError;
 
+    const isHTML = (d) => typeof d === 'string' && (d.trim().startsWith('<!doctype') || d.trim().startsWith('<html'));
+
     // 1. Try Laravel API first
     try {
-      res = await axios.post(`${API}/login`, { email, password });
+      const r = await axios.post(`${API}/login`, { email, password });
+      if (r.data && !isHTML(r.data)) res = r;
     } catch (err) {
       lastError = err;
     }
 
-    // 2. Fallback to direct PHP script if Laravel failed
+    // 2. Fallback to direct PHP script
     if (!res) {
       try {
-        res = await axios.post(`${ADMIN_PHP}?action=login`, { email, password });
+        const r = await axios.post(`${ADMIN_PHP}?action=login`, { email, password });
+        if (r.data && !isHTML(r.data)) res = r;
       } catch (err) {
-        try {
-          // Relative path fallback
-          res = await axios.post(`/api_admin.php?action=login`, { email, password });
-        } catch (err2) {
-          lastError = err2 || err;
-        }
+        lastError = err;
+      }
+    }
+
+    // 3. Fallback to relative /api_admin.php
+    if (!res) {
+      try {
+        const r = await axios.post(`/api_admin.php?action=login`, { email, password });
+        if (r.data && !isHTML(r.data)) res = r;
+      } catch (err) {
+        lastError = err;
+      }
+    }
+
+    // 4. Fallback to /public/api_admin.php
+    if (!res) {
+      try {
+        const r = await axios.post(`/public/api_admin.php?action=login`, { email, password });
+        if (r.data && !isHTML(r.data)) res = r;
+      } catch (err) {
+        lastError = err;
       }
     }
 
