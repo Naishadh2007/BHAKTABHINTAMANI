@@ -1,4 +1,4 @@
-name: Deploy Frontend & Backend to InfinityFree
+name: Deploy to InfinityFree (bhaktachintamani.freedev.app)
 
 on:
   push:
@@ -12,38 +12,33 @@ concurrency:
 
 jobs:
   deploy-all:
-    name: ?? Build & Deploy to InfinityFree
+    name: Build & Deploy to InfinityFree
     runs-on: ubuntu-latest
 
     steps:
-      - name: ?? Checkout Repository
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: ?? Setup Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
-      - name: ?? Install & Build Frontend
+      - name: Install & Build Frontend (Production)
         run: |
           cd frontend
           npm ci
           npm run build
-          cp -r dist/* ../backend/
-          cp -r dist/* ../backend/public/
+        env:
+          VITE_API_URL: https://bhaktachintamani.freedev.app
 
-      - name: ?? Sync to bhaktachintamani.gt.tc (Frontend Domain)
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: frontend/dist/
-          server-dir: bhaktachintamani.gt.tc/htdocs/
+      - name: Copy built frontend into backend/public
+        run: |
+          cp -r frontend/dist/. backend/public/
 
-      - name: ?? Sync to bhaktachintamani.freedev.app (Main App & API)
+      - name: Sync Backend + Frontend to freedev.app (Main App & API)
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
@@ -58,3 +53,4 @@ jobs:
             vendor/**
             storage/logs/**
             .env
+            tests/**

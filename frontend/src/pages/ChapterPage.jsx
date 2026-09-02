@@ -3,10 +3,16 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useLanguage } from '../context/LanguageContext';
 import { useReading } from '../context/ReadingContext';
-import { IconArrowLeft, IconAlert, IconChevronLeft, IconChevronRight, IconBook } from '../components/Icons';
+import { IconArrowLeft, IconAlert, IconChevronLeft, IconChevronRight, IconBook, IconX } from '../components/Icons';
 import './ChapterPage.css';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
+
+const GUJARATI_DIGITS = ['૦', '૧', '૨', '૩', '૪', '૫', '૬', '૭', '૮', '૯'];
+const toGujaratiDigits = (num) => {
+  if (num === null || num === undefined) return '';
+  return String(num).replace(/[0-9]/g, (digit) => GUJARATI_DIGITS[Number(digit)]);
+};
 
 const parseApiResponse = (data) => {
   if (!data) return null;
@@ -44,6 +50,7 @@ export default function ChapterPage() {
   const [progress, setProgress]         = useState(0);
   const [hoveredIndex, setHoveredIndex] = useState(null);
   const [scrollFocusIndex, setScrollFocusIndex] = useState(0);
+  const [activeWordMeaning, setActiveWordMeaning] = useState(null);
   const { lang }                        = useLanguage();
   const { fontSize, setCurrentChapterId } = useReading();
   const sidebarRef                      = useRef(null);
@@ -200,13 +207,29 @@ export default function ChapterPage() {
 
   const rawContent = getContent();
 
-  // Sanitize content to strip hardcoded font-size/legacy font tags while keeping alignments (center, right, etc.)
+  // Sanitize content: strip hardcoded font-size, colors, backgrounds, font tags
+  // This prevents content saved with one theme bleeding into another theme
   const sanitizedContent = rawContent
-    .replace(/font-size\s*:\s*[^;"]+;?/gi, '')
+    .replace(/font-size\s*:\s*[^;\"]+;?/gi, '')
+    .replace(/background(-color)?\s*:\s*[^;\"]+;?/gi, '')
+    .replace(/\bcolor\s*:\s*[^;\"]+;?/gi, '')
     .replace(/<font[^>]*>/gi, '')
     .replace(/<\/font>/gi, '');
 
   const activeFocusIdx = hoveredIndex !== null ? hoveredIndex : scrollFocusIndex;
+
+  const handleContentClick = (e) => {
+    const abbr = e.target.closest('abbr');
+    if (abbr) {
+      e.preventDefault();
+      // Use data-meaning (new) or fallback to title (legacy)
+      const meaning = abbr.getAttribute('data-meaning') || abbr.getAttribute('title');
+      const text = abbr.textContent;
+      if (meaning) {
+        setActiveWordMeaning({ word: text, meaning });
+      }
+    }
+  };
 
   return (
     <>
@@ -265,7 +288,7 @@ export default function ChapterPage() {
                         className={`sidebar__item sidebar__item--dist-${Math.min(diff, 4)} ${isFocus ? 'sidebar__item--focus' : ''} ${isCurrent ? 'sidebar__item--active' : ''}`}
                         style={{ height: `${ITEM_HEIGHT}px` }}
                       >
-                        <span className="sidebar__item-num">{ch.order}</span>
+                        <span className="sidebar__item-num">{lang === 'gu' ? toGujaratiDigits(ch.order) : ch.order}</span>
                         <span className="sidebar__item-title">{getTitle(ch)}</span>
                       </Link>
                     );
@@ -306,8 +329,9 @@ export default function ChapterPage() {
                 <div
                   className="chapter__reading-container font-rasa"
                   style={{ fontSize: `${fontSize}px` }}
+                  onClick={handleContentClick}
                 >
-                  {sanitizedContent.includes('<p>') || sanitizedContent.includes('<div>') || sanitizedContent.includes('style=') || sanitizedContent.includes('<br>') ? (
+                  {sanitizedContent.includes('<p>') || sanitizedContent.includes('<div>') || sanitizedContent.includes('style=') || sanitizedContent.includes('<br>') || sanitizedContent.includes('<abbr') || sanitizedContent.includes('data-meaning') ? (
                     <div
                       className="chapter__html-content"
                       dangerouslySetInnerHTML={{ __html: sanitizedContent }}
@@ -374,6 +398,35 @@ export default function ChapterPage() {
           </div>
         </div>
       </main>
+
+      {/* Word Meaning Touch/Click Popup Modal */}
+      {activeWordMeaning && (
+        <div
+          className="word-meaning-overlay"
+          onClick={() => setActiveWordMeaning(null)}
+        >
+          <div
+            className="word-meaning-card"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="word-meaning-card__header">
+              <span className="word-meaning-card__tag font-rasa">
+                {lang === 'gu' ? 'શબ્દાર્થ' : 'Word Meaning'}
+              </span>
+              <button
+                type="button"
+                className="word-meaning-card__close"
+                onClick={() => setActiveWordMeaning(null)}
+                aria-label="Close"
+              >
+                <IconX size={16} />
+              </button>
+            </div>
+            <h3 className="word-meaning-card__word font-rasa">{activeWordMeaning.word}</h3>
+            <p className="word-meaning-card__meaning font-rasa">{activeWordMeaning.meaning}</p>
+          </div>
+        </div>
+      )}
     </>
   );
 }

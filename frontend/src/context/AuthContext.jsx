@@ -3,7 +3,7 @@ import axios from 'axios';
 const AuthContext = createContext(null);
 
 const API_BASE = import.meta.env.VITE_API_URL || 'https://bhaktachintamani.freedev.app';
-const ADMIN_PHP = 'https://bhaktachintamani.freedev.app/api_admin.php';
+const ADMIN_PHP = `${API_BASE}/api_admin.php`;
 const API = `${API_BASE}/api/admin`;
 
 export function AuthProvider({ children }) {
@@ -21,10 +21,11 @@ export function AuthProvider({ children }) {
   const login = useCallback(async (email, password) => {
     let res;
     try {
-      res = await axios.post(`${ADMIN_PHP}?action=login`, { email, password });
-    } catch (err) {
-      // secondary fallback to Laravel route
+      // Try Laravel API first (primary)
       res = await axios.post(`${API}/login`, { email, password });
+    } catch (err) {
+      // Fallback to PHP script
+      res = await axios.post(`${ADMIN_PHP}?action=login`, { email, password });
     }
     const { token: t, admin: a } = res.data;
     setToken(t);
@@ -60,10 +61,21 @@ export function AuthProvider({ children }) {
 
   // Axios helper with auth header
   const authAxios = useCallback(() => {
-    return axios.create({
+    const instance = axios.create({
       baseURL: `${API_BASE}/api/admin`,
       headers: { Authorization: `Bearer ${token}` },
     });
+    instance.interceptors.response.use(
+      res => res,
+      err => {
+        if (err.response && err.response.status === 401) {
+          sessionStorage.removeItem('rv-token');
+          sessionStorage.removeItem('rv-admin');
+        }
+        return Promise.reject(err);
+      }
+    );
+    return instance;
   }, [token]);
 
   return (

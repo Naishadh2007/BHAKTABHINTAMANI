@@ -1,31 +1,44 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import { useAuth } from '../../context/AuthContext';
 import PermissionGate from '../components/PermissionGate';
 import { IconBook, IconCheck, IconFileText, IconUsers, IconPlus, IconGlobe } from '../../components/Icons';
 
-const CHAPTERS_API = 'https://bhaktachintamani.freedev.app/api_admin_chapters.php';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://bhaktachintamani.freedev.app';
+const CHAPTERS_API = `${API_BASE}/api_admin_chapters.php`;
 
 export default function DashboardPage() {
+  const { authAxios } = useAuth();
   const [stats, setStats]     = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    axios.get(`${CHAPTERS_API}?page=1&limit=1`)
-      .then(res => {
-        const total = res.data?.total ?? 0;
+    const fetchStats = async () => {
+      try {
+        let res = await authAxios().get('/chapters').catch(() => null);
+        if (!res?.data) {
+          res = await axios.get(`${API_BASE}/api/chapters`).catch(() => null);
+        }
+        if (!res?.data) {
+          res = await axios.get(`${CHAPTERS_API}?page=1&limit=1`).catch(() => null);
+        }
+        const data = res?.data;
+        const total = data?.total ?? (Array.isArray(data) ? data.length : (Array.isArray(data?.data) ? data.data.length : 0));
         setStats({
           published: total,
           draft:     0,
           total:     total,
           users:     1,
         });
-      })
-      .catch(() => {
+      } catch {
         setStats({ published: 0, draft: 0, total: 0, users: 0 });
-      })
-      .finally(() => setLoading(false));
-  }, []);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStats();
+  }, [authAxios]);
 
   const STAT_CARDS = [
     { icon: IconBook,     label: 'Total Chapters', key: 'total',     link: '/admin/chapters' },

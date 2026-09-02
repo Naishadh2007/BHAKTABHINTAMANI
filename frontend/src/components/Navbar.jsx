@@ -64,22 +64,22 @@ export default function Navbar() {
         {/* ── Right actions ── */}
         <div className="navbar__actions">
 
-          {/* ── Language Toggle (icon button like theme toggle) ── */}
+          {/* ── Language Toggle (icon button) ── */}
           <button
             id="lang-toggle-btn"
-            className="glass-btn glass-btn--icon glass-btn--lang"
+            className="navbar-icon-button navbar-icon-button--lang"
             onClick={toggleLanguage}
             aria-label={lang === 'gu' ? 'Switch to English' : 'ગુજરાતીમાં બદલો'}
             title={lang === 'gu' ? 'Switch to English' : 'Switch to Gujarati'}
           >
             <IconTranslate size={18} color="currentColor" />
-            <span className="glass-btn__lang-badge">{lang === 'gu' ? 'GU' : 'EN'}</span>
+            <span className="navbar-lang-badge">{lang === 'gu' ? 'GU' : 'EN'}</span>
           </button>
 
           {/* ── Theme Toggle ── */}
           <button
             id="theme-toggle"
-            className="glass-btn glass-btn--icon"
+            className="navbar-icon-button"
             onClick={toggleTheme}
             aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
             title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
@@ -94,7 +94,7 @@ export default function Navbar() {
             <button
               id="more-menu-btn"
               ref={dotsBtnRef}
-              className={`glass-btn glass-btn--icon ${menuOpen ? 'glass-btn--active' : ''}`}
+              className={`navbar-icon-button ${menuOpen ? 'navbar-icon-button--active' : ''}`}
               onClick={() => setMenuOpen(o => !o)}
               aria-label="More options"
               aria-expanded={menuOpen}
@@ -104,11 +104,11 @@ export default function Navbar() {
               <IconDotsThree size={18} color="currentColor" />
             </button>
 
-            {/* ── Popup ── */}
+            {/* ── Popup / Dropdown ── */}
             {menuOpen && (
               <div
                 ref={menuRef}
-                className="navbar__popup"
+                className="navbar-dropdown navbar__popup"
                 role="dialog"
                 aria-label="Reading options"
               >
@@ -123,7 +123,7 @@ export default function Navbar() {
                   <div className="popup-fontsize">
                     <button
                       id="popup-font-dec"
-                      className="popup-fontsize__btn"
+                      className="navbar-icon-button popup-fontsize__btn"
                       onClick={() => canDecrease && setFontSize(FONT_SIZES[fontIdx - 1])}
                       disabled={!canDecrease}
                       aria-label="Decrease font size"
@@ -132,7 +132,7 @@ export default function Navbar() {
                     </button>
 
                     <div className="popup-fontsize__track" aria-hidden="true">
-                      {FONT_SIZES.map((s, i) => (
+                      {FONT_SIZES.map((s) => (
                         <button
                           key={s}
                           className={`popup-fontsize__dot ${fontSize === s ? 'popup-fontsize__dot--active' : ''}`}
@@ -145,7 +145,7 @@ export default function Navbar() {
 
                     <button
                       id="popup-font-inc"
-                      className="popup-fontsize__btn"
+                      className="navbar-icon-button popup-fontsize__btn"
                       onClick={() => canIncrease && setFontSize(FONT_SIZES[fontIdx + 1])}
                       disabled={!canIncrease}
                       aria-label="Increase font size"
@@ -168,13 +168,13 @@ export default function Navbar() {
                       </div>
                       <button
                         id="popup-bookmark-btn"
-                        className={`popup-bookmark-btn ${chapterBookmark ? 'popup-bookmark-btn--active' : ''}`}
+                        className={`navbar-dropdown-item popup-bookmark-btn ${chapterBookmark ? 'popup-bookmark-btn--active' : ''}`}
                         onClick={() => currentChapterId && toggleBookmark(Number(currentChapterId), '', Number(currentChapterId))}
                         aria-label={chapterBookmark ? 'Remove bookmark' : 'Add bookmark'}
                       >
                         {chapterBookmark
                           ? <IconBookmarkFilled size={16} color="var(--accent)" />
-                          : <IconBookmark size={16} color="currentColor" />}
+                          : <IconBookmark size={16} color="var(--accent)" />}
                         <span>
                           {chapterBookmark
                             ? (lang === 'gu' ? 'સેવ થઈ ગઈ' : 'Bookmarked')

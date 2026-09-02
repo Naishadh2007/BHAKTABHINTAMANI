@@ -1,7 +1,10 @@
 node_modules
 .env
+!.env.production
 frontend/node_modules
 frontend/dist
+frontend/.env
+!frontend/.env.production
 backend/vendor
 backend/.env
 .DS_Store

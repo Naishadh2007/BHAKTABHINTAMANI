@@ -13,8 +13,9 @@ import {
   IconFileText
 } from '../../components/Icons';
 
+const API_BASE = import.meta.env.VITE_API_URL || 'https://bhaktachintamani.freedev.app';
+const CHAPTERS_API = `${API_BASE}/api_admin_chapters.php`;
 const LIMIT = 30;
-const CHAPTERS_API = 'https://bhaktachintamani.freedev.app/api_admin_chapters.php';
 
 export default function ChaptersPage() {
   const { authAxios } = useAuth();
@@ -56,7 +57,7 @@ export default function ChaptersPage() {
     setInitialLoad(true);
   }, [debouncedSearch, statusFilter, sortCol, sortDir]);
 
-  // Fetch chapters via direct PHP API
+  // Fetch chapters
   const fetchChapters = useCallback(async (pageNum) => {
     if (loadingRef.current) return;
     loadingRef.current = true;
@@ -70,7 +71,16 @@ export default function ChaptersPage() {
         ...(debouncedSearch && { search: debouncedSearch }),
         ...(statusFilter    && { status: statusFilter }),
       });
-      const { data } = await axios.get(`${CHAPTERS_API}?${params}`);
+      let res;
+      try {
+        res = await authAxios().get(`/chapters?${params}`);
+      } catch {
+        res = await axios.get(`${API_BASE}/api/chapters?${params}`).catch(() => null);
+        if (!res?.data) {
+          res = await axios.get(`${CHAPTERS_API}?${params}`).catch(() => null);
+        }
+      }
+      const data = res?.data;
       const rows = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
       if (pageNum === 1) {
         setChapters(rows);

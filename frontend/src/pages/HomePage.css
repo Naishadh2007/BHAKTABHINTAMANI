@@ -2,12 +2,329 @@
   padding: var(--space-xl) 0 var(--space-3xl);
 }
 
-.home__hero {
+/* ══════════════════════════════════════════════
+   HOME LAYOUT (Sidebar + Main Content Grid)
+   ══════════════════════════════════════════════ */
+.home__layout {
+  display: grid;
+  grid-template-columns: 290px 1fr;
+  gap: var(--space-xl);
+  align-items: start;
+}
+
+/* Mobile Filter Bar Toggle */
+.home__mobile-filter-bar {
+  display: none;
+  margin-bottom: var(--space-md);
+}
+
+.home__mobile-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  justify-content: center;
+  padding: 0.75rem 1rem;
+}
+
+.home__filter-badge {
+  font-size: 0.75rem;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: var(--accent-light);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* ── SIDEBAR PANEL (Frameless Reading Screen Style) ── */
+.home__sidebar {
+  position: sticky;
+  top: var(--navbar-h, 56px);
+  width: 310px;
+  height: calc(100vh - var(--navbar-h, 56px) - 2rem);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  user-select: none;
+  z-index: 10;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  transition: transform 0.28s ease, opacity 0.28s ease;
+}
+
+.home__sidebar-close {
+  display: none;
+}
+
+/* ══════════════════════════════════════════════
+   READING SCREEN 7-ROW WHEEL SCROLL LIST
+   ══════════════════════════════════════════════ */
+.sidebar__wheel-container {
+  width: 100%;
+  height: 392px; /* Exactly 7 rows x 56px */
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 2px;
+}
+
+.sidebar__inner {
+  width: 100%;
+  height: 392px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+
+  /* Smooth fade-out at top & bottom edges for 7 rows */
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(0, 0, 0, 0.2) 8%,
+    black 22%,
+    black 78%,
+    rgba(0, 0, 0, 0.2) 92%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(0, 0, 0, 0.2) 8%,
+    black 22%,
+    black 78%,
+    rgba(0, 0, 0, 0.2) 92%,
+    transparent 100%
+  );
+
+  /* Hide scrollbar */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.sidebar__inner::-webkit-scrollbar {
+  display: none;
+}
+
+.sidebar__spacer {
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.sidebar__list {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+/* ── Each Chapter Item in Wheel (No button boxes/borders) ── */
+/* ── Each Chapter Item in Wheel List ── */
+button.sidebar__item,
+.sidebar__item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 16px;
+  text-decoration: none;
+  font-family: var(--font-reading);
+  border-radius: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  cursor: pointer;
+  width: 100%;
+  justify-content: flex-start;
+  text-align: left;
+  will-change: opacity, transform;
+  transition:
+    opacity 0.18s cubic-bezier(0.2, 0.9, 0.4, 1),
+    transform 0.18s cubic-bezier(0.2, 0.9, 0.4, 1),
+    color 0.18s ease;
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+
+button.sidebar__item:hover,
+button.sidebar__item:focus,
+button.sidebar__item:active,
+.sidebar__item--active {
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* ── Distance-Based Opacity & Scale Levels ── */
+.sidebar__item--dist-0 {
+  opacity: 1 !important;
+  color: var(--accent) !important;
+  font-size: 1.38rem;
+  font-weight: 700;
+  transform: scale(1.05) translateX(4px);
+}
+
+.sidebar__item--dist-0 .sidebar__item-title {
+  color: var(--accent) !important;
+  text-shadow: 0 0 12px var(--accent-glow);
+}
+
+.sidebar__item--dist-1 {
+  opacity: 0.62 !important;
+  color: var(--text-secondary);
+  font-size: 1.18rem;
+  font-weight: 600;
+  transform: scale(0.97);
+}
+
+.sidebar__item--dist-2 {
+  opacity: 0.35 !important;
+  color: var(--text-muted);
+  font-size: 1.04rem;
+  font-weight: 400;
+  transform: scale(0.91);
+}
+
+.sidebar__item--dist-3 {
+  opacity: 0.15 !important;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  font-weight: 400;
+  transform: scale(0.86);
+}
+
+.sidebar__item--dist-far {
+  opacity: 0.03 !important;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  transform: scale(0.80);
+}
+
+/* Rounded Square Number Badge (Exact Reading Screen Style - Rasa Font) */
+.sidebar__item-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  width: 32px;
+  height: 32px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  font-family: var(--font-reading), 'Rasa', serif !important;
+  border-radius: 9px;
+  background: rgba(90, 58, 41, 0.07);
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  transition: all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1);
+  border: none !important;
+}
+
+[data-theme="dark"] .sidebar__item-num {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Active Number Badge: Solid Gold Fill with White/Dark Text */
+.sidebar__item--dist-0 .sidebar__item-num,
+.sidebar__item--active .sidebar__item-num {
+  background: var(--accent) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px var(--accent-glow) !important;
+  transform: scale(1.06);
+}
+
+[data-theme="dark"] .sidebar__item--dist-0 .sidebar__item-num,
+[data-theme="dark"] .sidebar__item--active .sidebar__item-num {
+  color: var(--bg-main) !important;
+}
+
+.sidebar__item-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+.home__sidebar-empty {
+  padding: 1rem 0;
   text-align: center;
-  margin-bottom: var(--space-2xl);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.home__sidebar-skeleton {
+  height: 36px;
+  border-radius: 8px;
+  margin-bottom: 4px;
+}
+
+/* ── Filter Status Header Bar (Main View - Frameless) ── */
+.home__filter-status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+  padding: 0.25rem 0.5rem;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.home__filter-status-text {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.home__filter-count-badge {
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: var(--accent-light);
+  color: var(--accent);
+}
+
+.home__reset-filter-btn {
+  font-size: 0.8rem;
+  padding: 0.35rem 0.75rem;
+}
+
+.home__empty-box {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 3rem 1rem;
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 1rem;
+}
+
+/* Hero Section */
+.home__hero {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.home__hero-mini-title {
+  font-family: var(--font-reading), "Rasa", serif;
+  font-size: clamp(1rem, 2.2vw, 1.25rem);
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 0.35rem;
+  letter-spacing: 0.01em;
 }
 
 .home__hero-badge {
@@ -27,7 +344,7 @@
 }
 
 .home__hero-title {
-  font-size: clamp(2.2rem, 4.5vw, 3.4rem);
+  font-size: clamp(2rem, 4vw, 3rem);
   font-weight: 800;
   font-family: var(--font-reading);
   color: var(--text-primary);
@@ -37,27 +354,53 @@
 }
 
 .home__hero-subtitle {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   color: var(--text-secondary);
   max-width: 580px;
-  margin: 0 auto 1.25rem;
+  margin: 0 auto 0.75rem;
   line-height: 1.5;
 }
 
-.home__meta {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.3rem 0.95rem;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-full);
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-}
+/* Responsive Styles */
+@media (max-width: 960px) {
+  .home__layout {
+    grid-template-columns: 1fr;
+  }
 
-[data-theme="light"] .home__meta {
-  background: rgba(90, 58, 41, 0.06);
+  .home__mobile-filter-bar {
+    display: block;
+  }
+
+  .home__sidebar-close {
+    display: inline-flex;
+  }
+
+  .home__sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 310px;
+    max-width: 85vw;
+    height: 100vh;
+    max-height: 100vh;
+    z-index: 1100;
+    border-radius: 0 20px 20px 0;
+    transform: translateX(-100%);
+    box-shadow: var(--shadow-md);
+  }
+
+  .home__sidebar--open {
+    transform: translateX(0);
+  }
+
+  .home__sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 1050;
+  }
 }
 
 /* ══════════════════════════════════════════════

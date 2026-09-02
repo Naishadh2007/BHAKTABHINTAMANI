@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import axios from 'axios';
+import { useAuth } from '../../context/AuthContext';
 import RichTextEditor from '../components/RichTextEditor';
 import { IconArrowLeft } from '../../components/Icons';
 
-const CHAPTERS_API = 'https://bhaktachintamani.freedev.app/api_admin_chapters.php';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://bhaktachintamani.freedev.app';
+const CHAPTERS_API = `${API_BASE}/api_admin_chapters.php`;
 
 const EMPTY = {
   title_gu: '', title_en: '',
@@ -17,6 +19,7 @@ export default function ChapterEditPage() {
   const { id }   = useParams();
   const isEdit   = Boolean(id);
   const navigate = useNavigate();
+  const { authAxios } = useAuth();
 
   const [form, setForm]         = useState(EMPTY);
   const [activeTab, setActiveTab] = useState('gu'); // 'gu' or 'en'
@@ -27,20 +30,35 @@ export default function ChapterEditPage() {
   // Load existing chapter for edit
   useEffect(() => {
     if (!isEdit) return;
-    axios.get(`${CHAPTERS_API}?id=${id}`)
-      .then(r => setForm({
-        title_gu:       r.data.title_gu       || r.data.title || '',
-        title_en:       r.data.title_en       || r.data.title || '',
-        description_gu: r.data.description_gu || r.data.description || '',
-        description_en: r.data.description_en || r.data.description || '',
-        content_gu:     r.data.content_gu     || r.data.content || '',
-        content_en:     r.data.content_en     || r.data.content || '',
-        order:          r.data.order          || '',
-        status:         r.data.status         || 'draft',
-      }))
-      .catch(() => setError('Could not load chapter.'))
-      .finally(() => setLoading(false));
-  }, [id, isEdit]);
+    const loadChapter = async () => {
+      try {
+        let r = await authAxios().get(`/chapters/${id}`).catch(() => null);
+        if (!r?.data) {
+          r = await axios.get(`${API_BASE}/api/chapters/${id}`).catch(() => null);
+        }
+        if (!r?.data) {
+          r = await axios.get(`${CHAPTERS_API}?id=${id}`).catch(() => null);
+        }
+        const data = r?.data?.chapter || r?.data;
+        if (!data) throw new Error('Not found');
+        setForm({
+          title_gu:       data.title_gu       || data.title || '',
+          title_en:       data.title_en       || data.title || '',
+          description_gu: data.description_gu || data.description || '',
+          description_en: data.description_en || data.description || '',
+          content_gu:     data.content_gu     || data.content || '',
+          content_en:     data.content_en     || data.content || '',
+          order:          data.order          || '',
+          status:         data.status         || 'draft',
+        });
+      } catch {
+        setError('Could not load chapter.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadChapter();
+  }, [id, isEdit, authAxios]);
 
   const set = (key) => (valOrE) => {
     const value = valOrE?.target ? valOrE.target.value : valOrE;
@@ -60,9 +78,13 @@ export default function ChapterEditPage() {
 
     try {
       if (isEdit) {
-        await axios.put(`${CHAPTERS_API}?id=${id}`, payload);
+        await authAxios().put(`/chapters/${id}`, payload).catch(() => {
+          return axios.put(`${CHAPTERS_API}?id=${id}`, payload);
+        });
       } else {
-        await axios.post(CHAPTERS_API, payload);
+        await authAxios().post('/chapters', payload).catch(() => {
+          return axios.post(CHAPTERS_API, payload);
+        });
       }
       navigate('/admin/chapters');
     } catch (err) {

@@ -69,6 +69,16 @@
   color: var(--text-primary) !important;
 }
 
+.rich-editor__content abbr {
+  color: var(--accent) !important;
+  text-decoration: none !important;
+  background: none !important;
+  cursor: pointer !important;
+  font-family: inherit !important;
+  font-size: inherit !important;
+  font-weight: inherit !important;
+}
+
 .rich-editor__content:focus {
   outline: none;
   border-color: var(--accent);

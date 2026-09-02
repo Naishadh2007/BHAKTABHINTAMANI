@@ -9,16 +9,16 @@ Route::get('/api/chapters/{id}', [ChapterController::class, 'show']);
 Route::get('/public/api/chapters', [ChapterController::class, 'index']);
 Route::get('/public/api/chapters/{id}', [ChapterController::class, 'show']);
 
-// Serve React SPA index.html for all frontend web routes
-Route::get('/{any?}', function () {
+// Serve React SPA index.html or redirect /admin routes to frontend dev server
+Route::get('/{any?}', function ($any = null) {
     $indexPath = public_path('index.html');
     if (file_exists($indexPath)) {
         return response()->file($indexPath);
     }
-    return response()->json([
-        'message' => 'ReadVerse Backend API Server is running',
-        'status'  => 'active',
-    ]);
+    if (request()->is('admin*')) {
+        return redirect('http://localhost:5173/admin/login');
+    }
+    return redirect('http://localhost:5173');
 })->where('any', '^(?!(api|public/api|test_db)).*$');
 
 

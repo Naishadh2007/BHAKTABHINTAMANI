@@ -181,96 +181,88 @@
 /* Focus line (The exact line hovered by mouse OR the center scroll line) */
 .sidebar__item--dist-0 {
   opacity: 1 !important;
-  color: var(--text-primary);
-  font-size: 1.45rem;
+  color: var(--accent) !important;
+  font-size: 1.38rem;
   font-weight: 700;
-  transform: scale(1.05) translateX(6px);
-  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.15);
+  transform: scale(1.05) translateX(4px);
+}
+
+.sidebar__item--dist-0 .sidebar__item-title {
+  color: var(--accent) !important;
+  text-shadow: 0 0 12px var(--accent-glow);
 }
 
 /* 1 row away from the cursor/focus */
 .sidebar__item--dist-1 {
   opacity: 0.62 !important;
   color: var(--text-secondary);
-  font-size: 1.24rem;
+  font-size: 1.18rem;
   font-weight: 600;
   transform: scale(0.97);
 }
 
 /* 2 rows away from the cursor/focus */
 .sidebar__item--dist-2 {
-  opacity: 0.32 !important;
+  opacity: 0.35 !important;
   color: var(--text-muted);
-  font-size: 1.06rem;
+  font-size: 1.04rem;
   font-weight: 400;
   transform: scale(0.91);
 }
 
 /* 3 rows away from the cursor/focus */
 .sidebar__item--dist-3 {
-  opacity: 0.12 !important;
+  opacity: 0.15 !important;
   color: var(--text-muted);
-  font-size: 0.94rem;
+  font-size: 0.92rem;
   font-weight: 400;
   transform: scale(0.86);
 }
 
 /* 4+ rows away (nearly invisible, faded out) */
 .sidebar__item--dist-4 {
-  opacity: 0.02 !important;
+  opacity: 0.03 !important;
   color: var(--text-muted);
-  font-size: 0.84rem;
+  font-size: 0.82rem;
   transform: scale(0.80);
 }
 
-/* Currently Active Chapter */
-.sidebar__item--active.sidebar__item--dist-0 {
-  color: var(--accent) !important;
-  text-shadow: 0 0 14px rgba(232, 197, 71, 0.45);
-}
-
-.sidebar__item--active.sidebar__item--dist-1 {
-  color: var(--accent) !important;
-  opacity: 0.75 !important;
-}
-
-.sidebar__item--active.sidebar__item--dist-2 {
-  color: var(--accent) !important;
-  opacity: 0.45 !important;
-}
-
-/* Item Chapter Order Number Badge */
+/* Rounded Square Number Badge (Exact Reading Screen Style - Rasa Font) */
 .sidebar__item-num {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 28px;
-  height: 28px;
-  font-size: 0.82rem;
+  min-width: 32px;
+  width: 32px;
+  height: 32px;
+  font-size: 1.05rem;
   font-weight: 700;
-  font-family: var(--font-ui);
-  border-radius: 7px;
-  background: rgba(255, 255, 255, 0.07);
-  color: inherit;
+  font-family: var(--font-reading), 'Rasa', serif !important;
+  border-radius: 9px;
+  background: rgba(90, 58, 41, 0.07);
+  color: var(--text-secondary);
   flex-shrink: 0;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1);
+  border: none;
 }
 
-[data-theme="light"] .sidebar__item-num {
-  background: rgba(90, 58, 41, 0.08);
+[data-theme="dark"] .sidebar__item-num {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.6);
 }
 
-.sidebar__item--dist-0 .sidebar__item-num {
-  background: rgba(232, 197, 71, 0.2);
-  color: var(--accent);
-  border: 1px solid rgba(232, 197, 71, 0.45);
-  box-shadow: 0 0 10px rgba(232, 197, 71, 0.25);
-}
-
+/* Active Number Badge: Solid Gold Fill with White/Dark Text */
+.sidebar__item--dist-0 .sidebar__item-num,
 .sidebar__item--active .sidebar__item-num {
   background: var(--accent) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px var(--accent-glow) !important;
+  transform: scale(1.06);
+}
+
+[data-theme="dark"] .sidebar__item--dist-0 .sidebar__item-num,
+[data-theme="dark"] .sidebar__item--active .sidebar__item-num {
   color: var(--bg-main) !important;
-  border-color: var(--accent) !important;
 }
 
 .sidebar__item-title {
@@ -566,4 +558,98 @@
   .chapter__footer-nav { flex-direction: row; justify-content: space-between; }
   .chapter__nav-glass { width: 46px; height: 46px; border-radius: 12px; }
 }
+
+/* ══════════════════════════════════════════════
+   Word Meaning (<abbr>) — accent color only, click reveals popup
+   ══════════════════════════════════════════════ */
+.chapter__reading-container abbr,
+.chapter__html-content abbr,
+.chapter__text-content abbr {
+  color: var(--accent) !important;
+  text-decoration: none !important;
+  background: none !important;
+  cursor: pointer !important;
+  font-family: inherit !important;
+  font-size: inherit !important;
+  font-weight: inherit !important;
+  line-height: inherit !important;
+}
+
+.word-meaning-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.word-meaning-card {
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-accent);
+  border-radius: var(--radius-xl);
+  padding: 1.5rem 1.75rem;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: var(--shadow-hover), 0 0 32px var(--accent-glow);
+  animation: fadeInUp 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.word-meaning-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.85rem;
+}
+
+.word-meaning-card__tag {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--accent-subtle);
+  border: 1px solid var(--border-accent);
+  padding: 0.25rem 0.65rem;
+  border-radius: var(--radius-full);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.word-meaning-card__close {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.word-meaning-card__close:hover {
+  color: var(--accent);
+  background: var(--bg-surface);
+}
+
+.word-meaning-card__word {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 0.5rem;
+  line-height: 1.25;
+}
+
+.word-meaning-card__meaning {
+  font-size: 1.15rem;
+  color: var(--text-primary);
+  line-height: 1.6;
+  white-space: pre-line;
+}
+
 

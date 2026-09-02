@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import { useAuth } from '../../context/AuthContext';
 import PermissionToggle from '../components/PermissionToggle';
 import { IconPlus, IconEdit, IconTrash, IconCheck, IconAlert } from '../../components/Icons';
 
-const USERS_API = 'https://bhaktachintamani.freedev.app/api_admin_users.php';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://bhaktachintamani.freedev.app';
+const USERS_API = `${API_BASE}/api_admin_users.php`;
 
 const ALL_PERMS = [
   { key: 'view_dashboard',   label: 'View Dashboard' },
@@ -17,6 +19,7 @@ const EMPTY_FORM = { name: '', email: '', password: '' };
 const EMPTY_PERMS = Object.fromEntries(ALL_PERMS.map(p => [p.key, false]));
 
 export default function UsersPage() {
+  const { authAxios }             = useAuth();
   const [users, setUsers]         = useState([]);
   const [loading, setLoading]     = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -26,18 +29,24 @@ export default function UsersPage() {
   const [saving, setSaving]       = useState(false);
   const [error, setError]         = useState('');
 
-  const load = () => {
+  const load = useCallback(() => {
     setLoading(true);
-    axios.get(USERS_API)
+    authAxios().get('/users')
       .then(r => {
-        const list = Array.isArray(r.data) ? r.data : [];
+        const list = Array.isArray(r.data) ? r.data : (Array.isArray(r.data?.data) ? r.data.data : []);
         setUsers(list);
       })
-      .catch(() => setUsers([]))
+      .catch(() => {
+        axios.get(USERS_API)
+          .then(r => setUsers(Array.isArray(r.data) ? r.data : []))
+          .catch(() => setUsers([]));
+      })
       .finally(() => setLoading(false));
-  };
+  }, [authAxios]);
 
-  useEffect(load, []);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const openCreate = () => {
     setEditUser(null);
