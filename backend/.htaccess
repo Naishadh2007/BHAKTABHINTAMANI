@@ -1,47 +1,15 @@
-DirectoryIndex index.html index.php
-
-# Correct MIME types — critical for module JS on strict browsers
-<IfModule mod_mime.c>
-  AddType application/javascript  .js .mjs
-  AddType text/css                .css
-  AddType image/svg+xml           .svg
-  AddType font/woff2              .woff2
-  AddType font/woff               .woff
-  AddType application/json        .json
-</IfModule>
-
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
 
-  # 1. Do NOT rewrite if request is for any .php file
-  RewriteCond %{REQUEST_URI} \.php$ [NC]
-  RewriteRule ^ - [L]
-
-  # 2. Serve existing static files/directories directly — NO rewrite
+  # Serve existing files and directories directly
   RewriteCond %{REQUEST_FILENAME} -f [OR]
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
 
-  # 3. Route /api/* → index.php gateway
-  RewriteRule ^(api|public/api|test_db)(/.*)? index.php [L,QSA]
+  # Route /api/* requests to index.php gateway
+  RewriteRule ^api/(.*)$ index.php [L,QSA]
 
-  # 4. React SPA — all other routes → index.html
+  # Route all other SPA routes to index.html
   RewriteRule ^ index.html [L]
-</IfModule>
-
-# Enable GZIP compression
-<IfModule mod_deflate.c>
-  AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json
-</IfModule>
-
-# Cache static assets for 1 year
-<IfModule mod_expires.c>
-  ExpiresActive On
-  ExpiresByType application/javascript "access plus 1 year"
-  ExpiresByType text/css              "access plus 1 year"
-  ExpiresByType image/svg+xml         "access plus 1 year"
-  ExpiresByType font/woff2            "access plus 1 year"
-  ExpiresByType image/png             "access plus 1 month"
-  ExpiresByType image/jpeg            "access plus 1 month"
 </IfModule>
