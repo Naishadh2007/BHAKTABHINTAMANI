@@ -82,7 +82,14 @@ try {
         }
     }
 
+    // Detect action from ?action= param OR from REQUEST_URI path
+    // e.g. POST /api/admin/login → action=login
     $action = isset($_GET['action']) ? $_GET['action'] : 'ping';
+    if ($action === 'ping' && isset($_SERVER['REQUEST_URI'])) {
+        if (preg_match('#/api/admin/(login|me|logout)#i', $_SERVER['REQUEST_URI'], $m)) {
+            $action = strtolower($m[1]);
+        }
+    }
 
     // ── ACTION: PING / DEBUG ──
     if ($action === 'ping') {
