@@ -1,15 +1,16 @@
+DirectoryIndex index.html index.php
+
 <IfModule mod_rewrite.c>
   RewriteEngine On
-  RewriteBase /
 
-  # Serve existing files and directories directly
+  # Serve existing files/dirs directly (js, css, images, .php files)
   RewriteCond %{REQUEST_FILENAME} -f [OR]
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
 
-  # Route /api/* requests to index.php gateway
-  RewriteRule ^api/(.*)$ index.php [L,QSA]
+  # Route /api/* to the PHP gateway
+  RewriteRule ^api/ index.php [L,QSA]
 
-  # Route all other SPA routes to index.html
+  # All other routes → React SPA
   RewriteRule ^ index.html [L]
 </IfModule>
