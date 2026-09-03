@@ -6,10 +6,20 @@ header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-W
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(200); exit; }
 
-$host   = 'sql107.infinityfree.com';
-$dbuser = 'if0_42640441';
-$pass   = 'Naishadhbv2007';
-$db     = 'if0_42640441_bhaktchintamani';
+$httpHost = explode(':', $_SERVER['HTTP_HOST'] ?? '')[0];
+$isLocal  = empty($httpHost) || in_array($httpHost, ['127.0.0.1', 'localhost']) || strpos($_SERVER['HTTP_HOST'] ?? '', 'freedev.app') === false;
+
+if ($isLocal) {
+    $host   = '127.0.0.1';
+    $dbuser = 'root';
+    $pass   = '';
+    $db     = 'bhaktachintamani';
+} else {
+    $host   = 'sql107.infinityfree.com';
+    $dbuser = 'if0_42640441';
+    $pass   = 'Naishadhbv2007';
+    $db     = 'if0_42640441_bhaktchintamani';
+}
 
 function respond($data, $code = 200) {
     http_response_code($code);

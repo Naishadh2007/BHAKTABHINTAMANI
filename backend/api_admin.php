@@ -13,11 +13,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-$host = 'sql107.infinityfree.com';
-$user = 'if0_42640441';
-$pass = 'Naishadhbv2007';
-$db   = 'if0_42640441_bhaktchintamani';
-$port = 3306;
+$httpHost = explode(':', $_SERVER['HTTP_HOST'] ?? '')[0];
+$isLocal  = empty($httpHost) || in_array($httpHost, ['127.0.0.1', 'localhost']) || strpos($_SERVER['HTTP_HOST'] ?? '', 'freedev.app') === false;
+
+if ($isLocal) {
+    $host = '127.0.0.1';
+    $user = 'root';
+    $pass = '';
+    $db   = 'bhaktachintamani';
+    $port = 3306;
+} else {
+    $host = 'sql107.infinityfree.com';
+    $user = 'if0_42640441';
+    $pass = 'Naishadhbv2007';
+    $db   = 'if0_42640441_bhaktchintamani';
+    $port = 3306;
+}
 
 try {
     $pdo = new PDO("mysql:host=$host;port=$port;dbname=$db;charset=utf8mb4", $user, $pass, [
