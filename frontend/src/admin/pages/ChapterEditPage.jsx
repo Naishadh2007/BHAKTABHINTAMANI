@@ -32,13 +32,25 @@ export default function ChapterEditPage() {
     if (!isEdit) return;
     const loadChapter = async () => {
       try {
-        let r = await authAxios().get(`/chapters/${id}`).catch(() => null);
-        if (!r?.data) {
-          r = await axios.get(`${API_BASE}/api/chapters/${id}`).catch(() => null);
+        const isHTML = (d) => typeof d === 'string' && d.trim().startsWith('<');
+        let r = null;
+
+        // 1. Direct PHP script (most reliable on InfinityFree)
+        const r1 = await axios.get(`${CHAPTERS_API}?id=${id}`).catch(() => null);
+        if (r1?.data && !isHTML(r1.data)) r = r1;
+
+        // 2. Fallback: authAxios gateway
+        if (!r) {
+          const r2 = await authAxios().get(`/chapters/${id}`).catch(() => null);
+          if (r2?.data && !isHTML(r2.data)) r = r2;
         }
-        if (!r?.data) {
-          r = await axios.get(`${CHAPTERS_API}?id=${id}`).catch(() => null);
+
+        // 3. Fallback: public API
+        if (!r) {
+          const r3 = await axios.get(`${API_BASE}/api_chapters.php?id=${id}`).catch(() => null);
+          if (r3?.data && !isHTML(r3.data)) r = r3;
         }
+
         const data = r?.data?.chapter || r?.data;
         if (!data) throw new Error('Not found');
         setForm({
@@ -78,13 +90,19 @@ export default function ChapterEditPage() {
 
     try {
       if (isEdit) {
-        await authAxios().put(`/chapters/${id}`, payload).catch(() => {
-          return axios.put(`${CHAPTERS_API}?id=${id}`, payload);
-        });
+        // PUT via direct PHP script first, fallback to authAxios
+        try {
+          await axios.put(`${CHAPTERS_API}?id=${id}`, payload);
+        } catch {
+          await authAxios().put(`/chapters/${id}`, payload);
+        }
       } else {
-        await authAxios().post('/chapters', payload).catch(() => {
-          return axios.post(CHAPTERS_API, payload);
-        });
+        // POST via direct PHP script first, fallback to authAxios
+        try {
+          await axios.post(CHAPTERS_API, payload);
+        } catch {
+          await authAxios().post('/chapters', payload);
+        }
       }
       navigate('/admin/chapters');
     } catch (err) {
