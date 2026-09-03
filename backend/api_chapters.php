@@ -22,6 +22,11 @@ try {
     ]);
 
     $id = isset($_GET['id']) ? (int)$_GET['id'] : null;
+    if (!$id && isset($_SERVER['REQUEST_URI'])) {
+        if (preg_match('#/chapters/(\d+)#i', $_SERVER['REQUEST_URI'], $m)) {
+            $id = (int)$m[1];
+        }
+    }
 
     if ($id) {
         // Fetch single chapter

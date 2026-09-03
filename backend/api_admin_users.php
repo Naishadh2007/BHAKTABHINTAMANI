@@ -26,6 +26,11 @@ try {
 
     $method = $_SERVER['REQUEST_METHOD'];
     $id     = isset($_GET['id']) ? intval($_GET['id']) : null;
+    if (!$id && isset($_SERVER['REQUEST_URI'])) {
+        if (preg_match('#/users/(\d+)#i', $_SERVER['REQUEST_URI'], $m)) {
+            $id = intval($m[1]);
+        }
+    }
     $input  = json_decode(file_get_contents('php://input'), true);
     if (!is_array($input)) $input = [];
 

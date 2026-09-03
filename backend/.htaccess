@@ -1,3 +1,5 @@
+DirectoryIndex index.html index.php
+
 # Correct MIME types — critical for module JS on strict browsers
 <IfModule mod_mime.c>
   AddType application/javascript  .js .mjs
