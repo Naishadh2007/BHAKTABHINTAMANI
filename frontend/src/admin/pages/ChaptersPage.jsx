@@ -63,6 +63,7 @@ export default function ChaptersPage() {
     loadingRef.current = true;
     setLoading(true);
     try {
+      const isHTML = (d) => typeof d === 'string' && d.trim().startsWith('<');
       const params = new URLSearchParams({
         page:  pageNum,
         limit: LIMIT,
@@ -71,15 +72,24 @@ export default function ChaptersPage() {
         ...(debouncedSearch && { search: debouncedSearch }),
         ...(statusFilter    && { status: statusFilter }),
       });
-      let res;
-      try {
-        res = await authAxios().get(`/chapters?${params}`);
-      } catch {
-        res = await axios.get(`${API_BASE}/api/chapters?${params}`).catch(() => null);
-        if (!res?.data) {
-          res = await axios.get(`${CHAPTERS_API}?${params}`).catch(() => null);
-        }
+      let res = null;
+
+      // 1. Direct PHP script — most reliable on InfinityFree shared hosting
+      const r1 = await axios.get(`${CHAPTERS_API}?${params}`).catch(() => null);
+      if (r1?.data && !isHTML(r1.data)) res = r1;
+
+      // 2. Fallback: authAxios gateway
+      if (!res) {
+        const r2 = await authAxios().get(`/chapters?${params}`).catch(() => null);
+        if (r2?.data && !isHTML(r2.data)) res = r2;
       }
+
+      // 3. Fallback: public chapters API (no auth required)
+      if (!res) {
+        const r3 = await axios.get(`${API_BASE}/api_chapters.php`).catch(() => null);
+        if (r3?.data && !isHTML(r3.data)) res = r3;
+      }
+
       const data = res?.data;
       const rows = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
       if (pageNum === 1) {

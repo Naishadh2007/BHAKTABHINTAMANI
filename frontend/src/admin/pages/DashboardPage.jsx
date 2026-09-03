@@ -14,23 +14,35 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const isHTML = (d) => typeof d === 'string' && d.trim().startsWith('<');
     const fetchStats = async () => {
       try {
-        let res = await authAxios().get('/chapters').catch(() => null);
-        if (!res?.data) {
-          res = await axios.get(`${API_BASE}/api/chapters`).catch(() => null);
+        let data = null;
+
+        // 1. Direct PHP script (most reliable on InfinityFree)
+        const r1 = await axios.get(`${CHAPTERS_API}?page=1&limit=1`).catch(() => null);
+        if (r1?.data && !isHTML(r1.data)) {
+          data = r1.data;
         }
-        if (!res?.data) {
-          res = await axios.get(`${CHAPTERS_API}?page=1&limit=1`).catch(() => null);
+
+        // 2. Fallback: authAxios gateway
+        if (!data) {
+          const r2 = await authAxios().get('/chapters').catch(() => null);
+          if (r2?.data && !isHTML(r2.data)) data = r2.data;
         }
-        const data = res?.data;
-        const total = data?.total ?? (Array.isArray(data) ? data.length : (Array.isArray(data?.data) ? data.data.length : 0));
-        setStats({
-          published: total,
-          draft:     0,
-          total:     total,
-          users:     1,
-        });
+
+        // 3. Fallback: public chapters API
+        if (!data) {
+          const r3 = await axios.get(`${API_BASE}/api_chapters.php`).catch(() => null);
+          if (r3?.data && !isHTML(r3.data)) data = r3.data;
+        }
+
+        const total  = data?.total ?? (Array.isArray(data) ? data.length : (Array.isArray(data?.data) ? data.data.length : 0));
+        const drafts = Array.isArray(data?.data)
+          ? data.data.filter(c => c.status === 'draft').length
+          : 0;
+
+        setStats({ published: total - drafts, draft: drafts, total, users: 1 });
       } catch {
         setStats({ published: 0, draft: 0, total: 0, users: 0 });
       } finally {
